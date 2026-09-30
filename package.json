@@ -1,0 +1,11 @@
+{
+  "name": "sound-quest",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SOUND QUEST - Plataforma de capacitacao industrial acessivel",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev": "node start.js",
+    "start": "node start.js"
+  }
+}
