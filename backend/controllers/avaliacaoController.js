@@ -4,9 +4,49 @@ const { maybeIssueCertificate, calcContentProgress } = require("./certificadoCon
 function submit(req, res) {
   const activity = db.prepare("SELECT * FROM activities WHERE id = ?").get(req.params.id);
   if (!activity) return res.status(404).json({ error: "Avaliacao nao encontrada." });
-  const contentDone = calcContentProgress(req.user.id, activity.training_id);
-  if (contentDone < 100) {
-    return res.status(400).json({ error: "Conclua todos os modulos antes de iniciar a avaliacao." });
+  const training = db.prepare("SELECT company_id FROM trainings WHERE id = ?").get(activity.training_id);
+  if (!training || training.company_id !== req.user.company_id) {
+    return res.status(404).json({ error: "Avaliacao nao encontrada." });
+  }
+  const kind = activity.kind || "final";
+  if (kind === "final") {
+    const contentDone = calcContentProgress(req.user.id, activity.training_id);
+    if (contentDone < 100) {
+      return res.status(400).json({ error: "Conclua todos os conteudos obrigatorios antes da avaliacao final." });
+    }
+    const pending = db.prepare(
+      `SELECT a.id FROM activities a
+       WHERE a.training_id = ? AND a.kind = 'module'
+         AND NOT EXISTS (
+           SELECT 1 FROM attempts t
+           WHERE t.user_id = ? AND t.activity_id = a.id AND t.passed = 1
+         )`
+    ).get(activity.training_id, req.user.id);
+    if (pending) {
+      return res.status(400).json({ error: "Conclua as atividades de cada modulo antes da avaliacao final." });
+    }
+    const pendingTask = db.prepare(
+      `SELECT tk.id FROM tasks tk
+       WHERE tk.training_id = ? AND tk.required = 1
+         AND NOT EXISTS (
+           SELECT 1 FROM task_submissions s
+           WHERE s.task_id = tk.id AND s.user_id = ? AND s.status IN ('submitted', 'approved')
+         )`
+    ).get(activity.training_id, req.user.id);
+    if (pendingTask) {
+      return res.status(400).json({ error: "Envie as tarefas obrigatorias do treinamento antes da avaliacao final." });
+    }
+  } else if (kind === "module") {
+    const moduleContents = db.prepare("SELECT id FROM contents WHERE module_id = ?").all(activity.module_id);
+    if (moduleContents.length) {
+      const done = db.prepare(
+        `SELECT COUNT(*) AS n FROM content_progress
+         WHERE user_id = ? AND completed = 1 AND content_id IN (${moduleContents.map(() => "?").join(",")})`
+      ).get(req.user.id, ...moduleContents.map((c) => c.id)).n;
+      if (done < moduleContents.length) {
+        return res.status(400).json({ error: "Conclua os conteudos deste modulo antes da atividade." });
+      }
+    }
   }
   const answers = req.body.answers || {};
   const questions = db.prepare("SELECT * FROM questions WHERE activity_id = ?").all(activity.id);
@@ -30,9 +70,36 @@ function submit(req, res) {
     total,
     passed: !!passed,
     passing_score: activity.passing_score,
+    kind,
+    module_id: activity.module_id,
     certificate,
     progress: info.display,
-    completed: info.completed
+    completed: info.completed,
+    stage: info.stage,
+    exam: info.exam,
+    quizzes: info.quizzes,
+    tasks: info.tasks
+  });
+}
+
+function checkAnswer(req, res) {
+  const activity = db.prepare("SELECT * FROM activities WHERE id = ?").get(req.params.id);
+  if (!activity) return res.status(404).json({ error: "Avaliacao nao encontrada." });
+  const training = db.prepare("SELECT company_id FROM trainings WHERE id = ?").get(activity.training_id);
+  if (!training || training.company_id !== req.user.company_id) {
+    return res.status(404).json({ error: "Avaliacao nao encontrada." });
+  }
+  const questionId = Number((req.body || {}).question_id);
+  const optionId = Number((req.body || {}).option_id);
+  const question = db.prepare("SELECT * FROM questions WHERE id = ? AND activity_id = ?").get(questionId, activity.id);
+  if (!question) return res.status(400).json({ error: "Pergunta invalida." });
+  const option = db.prepare("SELECT * FROM options WHERE id = ? AND question_id = ?").get(optionId, question.id);
+  if (!option) return res.status(400).json({ error: "Alternativa invalida." });
+  const correct = db.prepare("SELECT id FROM options WHERE question_id = ? AND is_correct = 1").get(question.id);
+  res.json({
+    correct: !!option.is_correct,
+    selected_id: option.id,
+    correct_id: correct ? correct.id : null
   });
 }
 
@@ -53,7 +120,7 @@ function myAttempts(req, res) {
         WHERE cp.user_id = ? AND m.training_id = t.id AND cp.completed = 1) AS done_contents
      FROM enrollments e
      JOIN trainings t ON t.id = e.training_id
-     LEFT JOIN activities ac ON ac.training_id = t.id
+     LEFT JOIN activities ac ON ac.training_id = t.id AND (ac.kind = 'final' OR ac.kind IS NULL) AND ac.module_id IS NULL
      WHERE e.user_id = ?
      ORDER BY t.title`
   ).all(req.user.id, req.user.id, req.user.id);
@@ -63,17 +130,24 @@ function myAttempts(req, res) {
 function saveActivity(req, res) {
   const t = db.prepare("SELECT * FROM trainings WHERE id = ? AND company_id = ?").get(req.params.id, req.user.company_id);
   if (!t) return res.status(404).json({ error: "Treinamento nao encontrado." });
-  const { title, description, passing_score, questions } = req.body || {};
+  const { title, description, passing_score, questions, module_id, kind } = req.body || {};
   if (!title) return res.status(400).json({ error: "Informe o titulo da avaliacao." });
-  const existing = db.prepare("SELECT id FROM activities WHERE training_id = ?").get(t.id);
+  const activityKind = kind === "module" ? "module" : "final";
+  const moduleId = activityKind === "module" ? Number(module_id) || null : null;
+  if (activityKind === "module" && !moduleId) {
+    return res.status(400).json({ error: "Informe o modulo da atividade." });
+  }
+  const existing = activityKind === "module"
+    ? db.prepare("SELECT id FROM activities WHERE training_id = ? AND module_id = ? AND kind = 'module'").get(t.id, moduleId)
+    : db.prepare("SELECT id FROM activities WHERE training_id = ? AND (kind = 'final' OR kind IS NULL) AND module_id IS NULL").get(t.id);
   let activityId;
   if (existing) {
-    db.prepare("UPDATE activities SET title = ?, description = ?, passing_score = ? WHERE id = ?").run(title, description || "", Number(passing_score) || 70, existing.id);
+    db.prepare("UPDATE activities SET title = ?, description = ?, passing_score = ?, kind = ?, module_id = ? WHERE id = ?").run(title, description || "", Number(passing_score) || 70, activityKind, moduleId, existing.id);
     db.prepare("DELETE FROM options WHERE question_id IN (SELECT id FROM questions WHERE activity_id = ?)").run(existing.id);
     db.prepare("DELETE FROM questions WHERE activity_id = ?").run(existing.id);
     activityId = existing.id;
   } else {
-    activityId = db.prepare("INSERT INTO activities (training_id, title, description, passing_score) VALUES (?, ?, ?, ?)").run(t.id, title, description || "", Number(passing_score) || 70).lastInsertRowid;
+    activityId = db.prepare("INSERT INTO activities (training_id, module_id, kind, title, description, passing_score) VALUES (?, ?, ?, ?, ?, ?)").run(t.id, moduleId, activityKind, title, description || "", Number(passing_score) || 70).lastInsertRowid;
   }
   (questions || []).forEach((q, i) => {
     const qid = db.prepare("INSERT INTO questions (activity_id, prompt, order_index) VALUES (?, ?, ?)").run(activityId, q.prompt, i).lastInsertRowid;
@@ -94,4 +168,4 @@ function attempts(req, res) {
   res.json(rows);
 }
 
-module.exports = { submit, saveActivity, attempts, myAttempts };
+module.exports = { submit, checkAnswer, saveActivity, attempts, myAttempts };

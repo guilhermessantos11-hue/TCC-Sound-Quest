@@ -1,22 +1,42 @@
 const db = require("../config/database");
-const { overallProgress, maybeIssueCertificate } = require("./certificadoController");
+const { overallProgress } = require("./certificadoController");
+
+function mapQuestions(activityId) {
+  return db.prepare("SELECT id, prompt, order_index FROM questions WHERE activity_id = ? ORDER BY order_index, id").all(activityId).map((q) => ({
+    ...q,
+    options: db.prepare("SELECT id, label FROM options WHERE question_id = ?").all(q.id)
+  }));
+}
 
 function trainingPayload(training, userId) {
-  const modules = db.prepare("SELECT * FROM modules WHERE training_id = ? ORDER BY order_index, id").all(training.id).map((m) => ({
-    ...m,
-    contents: db.prepare("SELECT * FROM contents WHERE module_id = ? ORDER BY order_index, id").all(m.id)
-  }));
-  const activity = db.prepare("SELECT * FROM activities WHERE training_id = ?").get(training.id);
-  if (activity) {
-    activity.questions = db.prepare("SELECT id, prompt, order_index FROM questions WHERE activity_id = ? ORDER BY order_index, id").all(activity.id).map((q) => ({
-      ...q,
-      options: db.prepare("SELECT id, label FROM options WHERE question_id = ?").all(q.id)
-    }));
-  }
+  const modules = db.prepare("SELECT * FROM modules WHERE training_id = ? ORDER BY order_index, id").all(training.id).map((m) => {
+    const quiz = db.prepare("SELECT * FROM activities WHERE module_id = ? AND kind = 'module'").get(m.id);
+    if (quiz) quiz.questions = mapQuestions(quiz.id);
+    return {
+      ...m,
+      contents: db.prepare("SELECT * FROM contents WHERE module_id = ? ORDER BY order_index, id").all(m.id),
+      quiz
+    };
+  });
+  const activity = db.prepare("SELECT * FROM activities WHERE training_id = ? AND (kind = 'final' OR kind IS NULL) AND module_id IS NULL").get(training.id);
+  if (activity) activity.questions = mapQuestions(activity.id);
   const enrollment = userId ? db.prepare("SELECT * FROM enrollments WHERE user_id = ? AND training_id = ?").get(userId, training.id) : null;
   const certificate = userId ? db.prepare("SELECT * FROM certificates WHERE user_id = ? AND training_id = ?").get(userId, training.id) : null;
   const progressInfo = userId ? overallProgress(userId, training.id) : null;
-  return { ...training, modules, activity, enrollment, certificate, progressInfo };
+  const tasks = db.prepare(
+    `SELECT tk.*, m.title AS module_title
+     FROM tasks tk LEFT JOIN modules m ON m.id = tk.module_id
+     WHERE tk.training_id = ? ORDER BY tk.due_at IS NULL, tk.due_at, tk.id`
+  ).all(training.id).map((tk) => {
+    const submission = userId
+      ? db.prepare("SELECT * FROM task_submissions WHERE task_id = ? AND user_id = ?").get(tk.id, userId)
+      : null;
+    const enrolled = db.prepare("SELECT COUNT(*) AS n FROM enrollments WHERE training_id = ?").get(training.id).n;
+    const approved = db.prepare("SELECT COUNT(*) AS n FROM task_submissions WHERE task_id = ? AND status = 'approved'").get(tk.id).n;
+    const submitted = db.prepare("SELECT COUNT(*) AS n FROM task_submissions WHERE task_id = ? AND status = 'submitted'").get(tk.id).n;
+    return { ...tk, submission, enrolled, approved, submitted, pending: Math.max(0, enrolled - approved - submitted) };
+  });
+  return { ...training, modules, activity, enrollment, certificate, progressInfo, tasks };
 }
 
 function listPublished(req, res) {
@@ -42,6 +62,16 @@ function getOne(req, res) {
         .prepare("SELECT * FROM attempts WHERE user_id = ? AND activity_id = ? ORDER BY created_at DESC LIMIT 1")
         .get(req.user.id, payload.activity.id);
     }
+    payload.modules = payload.modules.map((m) => {
+      if (!m.quiz) return m;
+      const last = db
+        .prepare("SELECT * FROM attempts WHERE user_id = ? AND activity_id = ? ORDER BY created_at DESC LIMIT 1")
+        .get(req.user.id, m.quiz.id);
+      const best = db
+        .prepare("SELECT MAX(score) AS score FROM attempts WHERE user_id = ? AND activity_id = ?")
+        .get(req.user.id, m.quiz.id);
+      return { ...m, lastQuizAttempt: last, quizBest: best ? best.score : null };
+    });
   }
   res.json(payload);
 }

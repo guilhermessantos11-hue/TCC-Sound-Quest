@@ -18,6 +18,7 @@ app.use("/api", require("../routes/funcionarioRoutes"));
 app.use("/api", require("../routes/treinamentoRoutes"));
 app.use("/api", require("../routes/moduloRoutes"));
 app.use("/api", require("../routes/avaliacaoRoutes"));
+app.use("/api", require("../routes/tarefaRoutes"));
 app.use("/api", require("../routes/certificadoRoutes"));
 
 const PORT = process.env.PORT || 3001;

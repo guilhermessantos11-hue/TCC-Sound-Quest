@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS trainings (
   status TEXT DEFAULT 'published',
   libras_available INTEGER DEFAULT 1,
   captions_available INTEGER DEFAULT 1,
+  required INTEGER DEFAULT 1,
   created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (company_id) REFERENCES companies(id)
 );
@@ -67,10 +68,13 @@ CREATE TABLE IF NOT EXISTS contents (
 CREATE TABLE IF NOT EXISTS activities (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   training_id INTEGER NOT NULL,
+  module_id INTEGER,
+  kind TEXT NOT NULL DEFAULT 'final' CHECK (kind IN ('module', 'final')),
   title TEXT NOT NULL,
   description TEXT,
   passing_score INTEGER DEFAULT 70,
-  FOREIGN KEY (training_id) REFERENCES trainings(id) ON DELETE CASCADE
+  FOREIGN KEY (training_id) REFERENCES trainings(id) ON DELETE CASCADE,
+  FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS questions (
@@ -134,4 +138,14 @@ CREATE TABLE IF NOT EXISTS certificates (
   UNIQUE(user_id, training_id),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (training_id) REFERENCES trainings(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

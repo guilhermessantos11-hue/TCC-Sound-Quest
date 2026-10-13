@@ -18,46 +18,113 @@ function calcContentProgress(userId, trainingId) {
   return Math.round((done / total) * 100);
 }
 
+function activityBest(userId, activityId, passingScore) {
+  const best = db
+    .prepare("SELECT MAX(score) AS score FROM attempts WHERE user_id = ? AND activity_id = ?")
+    .get(userId, activityId);
+  const bestScore = best && best.score != null ? best.score : null;
+  return {
+    bestScore,
+    passed: bestScore != null && bestScore >= (passingScore || 70)
+  };
+}
+
+function getModuleQuizState(userId, trainingId) {
+  const quizzes = db
+    .prepare("SELECT id, module_id, passing_score, title FROM activities WHERE training_id = ? AND kind = 'module'")
+    .all(trainingId);
+  const byModule = {};
+  let passedCount = 0;
+  quizzes.forEach((q) => {
+    const best = activityBest(userId, q.id, q.passing_score);
+    byModule[q.module_id] = { ...q, ...best };
+    if (best.passed) passedCount += 1;
+  });
+  return {
+    total: quizzes.length,
+    passed: passedCount,
+    allPassed: quizzes.length === 0 || passedCount === quizzes.length,
+    byModule
+  };
+}
+
 function getExamState(userId, trainingId) {
-  const activity = db.prepare("SELECT id, passing_score FROM activities WHERE training_id = ?").get(trainingId);
+  const activity = db
+    .prepare("SELECT id, passing_score FROM activities WHERE training_id = ? AND (kind = 'final' OR kind IS NULL) AND module_id IS NULL")
+    .get(trainingId);
   if (!activity) {
     return { hasExam: false, passed: true, bestScore: null, passing_score: null, activity_id: null };
   }
-  const best = db
-    .prepare("SELECT MAX(score) AS score FROM attempts WHERE user_id = ? AND activity_id = ?")
-    .get(userId, activity.id);
-  const bestScore = best && best.score != null ? best.score : null;
+  const best = activityBest(userId, activity.id, activity.passing_score);
   return {
     hasExam: true,
-    passed: (bestScore || 0) >= activity.passing_score,
-    bestScore,
+    passed: best.passed,
+    bestScore: best.bestScore,
     passing_score: activity.passing_score,
     activity_id: activity.id
   };
 }
 
+function getTaskState(userId, trainingId) {
+  const tasks = db.prepare("SELECT id, title, required, due_at, module_id FROM tasks WHERE training_id = ?").all(trainingId);
+  const byId = {};
+  let required = 0;
+  let approved = 0;
+  let submitted = 0;
+  tasks.forEach((t) => {
+    const sub = db.prepare("SELECT status, result_note FROM task_submissions WHERE task_id = ? AND user_id = ?").get(t.id, userId);
+    const status = sub ? sub.status : "pending";
+    byId[t.id] = { ...t, status, result_note: sub ? sub.result_note : null };
+    if (!t.required) return;
+    required += 1;
+    if (status === "approved") approved += 1;
+    if (status === "submitted" || status === "approved") submitted += 1;
+  });
+  return {
+    total: tasks.length,
+    required,
+    approved,
+    submitted,
+    allSubmitted: required === 0 || submitted === required,
+    allApproved: required === 0 || approved === required,
+    byId
+  };
+}
+
 function overallProgress(userId, trainingId) {
   const content = calcContentProgress(userId, trainingId);
+  const quizzes = getModuleQuizState(userId, trainingId);
+  const tasks = getTaskState(userId, trainingId);
   const exam = getExamState(userId, trainingId);
+  const quizShare = quizzes.total ? Math.round((quizzes.passed / quizzes.total) * 100) : 100;
+  const taskShare = tasks.required ? Math.round((tasks.approved / tasks.required) * 100) : 100;
   let display = content;
   let completed = false;
   let stage = "modules";
-  if (!exam.hasExam) {
-    completed = content >= 100;
-    display = content;
-    stage = completed ? "done" : "modules";
-  } else if (content < 100) {
-    display = content;
-    stage = "modules";
-  } else if (!exam.passed) {
-    display = 90;
+  if (content < 100 || !quizzes.allPassed) {
+    display = quizzes.total ? Math.round(content * 0.65 + quizShare * 0.2) : content;
+    if (display >= 88) display = 87;
+    stage = content < 100 ? "modules" : "quizzes";
+  } else if (!tasks.allSubmitted) {
+    display = Math.min(89, 80 + Math.round(taskShare * 0.1));
+    stage = "tasks";
+  } else if (exam.hasExam && !exam.passed) {
+    display = 92;
     stage = "exam";
+  } else if (!tasks.allApproved) {
+    display = 96;
+    stage = "tasks";
   } else {
     display = 100;
     completed = true;
     stage = "done";
   }
-  return { content, display, completed, stage, exam };
+  if (!exam.hasExam && content >= 100 && quizzes.allPassed && tasks.allApproved) {
+    display = 100;
+    completed = true;
+    stage = "done";
+  }
+  return { content, display, completed, stage, exam, quizzes, tasks };
 }
 
 function maybeIssueCertificate(userId, trainingId) {
@@ -99,6 +166,12 @@ function getOne(req, res) {
   if (req.user.role !== "company" && cert.user_id !== req.user.id) {
     return res.status(403).json({ error: "Acesso negado." });
   }
+  if (req.user.role === "company" && cert.company_name) {
+    const training = db.prepare("SELECT company_id FROM trainings WHERE id = ?").get(cert.training_id);
+    if (!training || training.company_id !== req.user.company_id) {
+      return res.status(403).json({ error: "Acesso negado." });
+    }
+  }
   res.json(cert);
 }
 
@@ -106,6 +179,8 @@ module.exports = {
   calcProgress: calcContentProgress,
   calcContentProgress,
   getExamState,
+  getModuleQuizState,
+  getTaskState,
   overallProgress,
   maybeIssueCertificate,
   list,

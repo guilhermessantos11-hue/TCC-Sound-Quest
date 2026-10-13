@@ -1,5 +1,8 @@
+import "./styles.css";
+import "./theme.css";
 import { mountToolbar, setLibras } from "./a11y.js";
 import { signalsView } from "./sinais.js";
+import { unmountInterprete } from "./interprete.js";
 import { figureFor } from "./figures.js";
 import { api, setSession, clearSession, getUser, getCompany } from "./api.js";
 
@@ -13,7 +16,6 @@ const state = {
 };
 
 applyA11y();
-
 mountToolbar(state, applyA11y);
 
 window.addEventListener("hashchange", () => {
@@ -63,15 +65,16 @@ window.sqA11y = (action) => {
 };
 
 function logo(variant = "dark") {
-  const src = variant === "light" ? "/brand/logo-light.svg" : "/brand/logo.svg";
+  const src = variant === "light" ? "/brand/logo-light.svg?v=green2" : "/brand/logo.svg?v=green2";
   return `<a class="brand" href="#/" aria-label="SOUND QUEST"><img class="brand-logo" src="${src}" alt="SOUND QUEST" /></a>`;
 }
 
 function logoMark(size = "md") {
-  return `<img class="brand-mark brand-mark-${size}" src="/brand/logo-mark.svg" alt="SOUND QUEST" />`;
+  return `<img class="brand-mark brand-mark-${size}" src="/brand/logo-mark.svg?v=green2" alt="SOUND QUEST" />`;
 }
 
 async function render() {
+  unmountInterprete();
   const route = state.route;
   if (!state.user && route.startsWith("/app")) {
     go("/login");
@@ -83,131 +86,57 @@ async function render() {
   }
   if (route === "/" || route === "" || route.startsWith("/login")) return renderAuth("login");
   if (route.startsWith("/cadastro")) return renderAuth("register");
+  if (route.startsWith("/recuperar-senha")) return renderForgot();
+  if (route.startsWith("/redefinir-senha")) return renderReset();
   if (route.startsWith("/app")) return renderApp();
   renderAuth("login");
 }
 
-function renderLanding() {
-  app.innerHTML = `
-    <a class="skip" href="#conteudo">Ir para o conteudo</a>
-    <div class="landing">
-      <div class="container nav">
-        ${logo()}
-        <div class="nav-links">
-          <a href="#beneficios">Beneficios</a>
-          <a href="#acessibilidade">Acessibilidade</a>
-          <a href="#solucao">Solucao</a>
-          <a class="btn btn-primary" href="#/login">Entrar</a>
-        </div>
-      </div>
-      <div class="container hero" id="conteudo">
-        <div>
-          <div class="kicker">Capacitacao industrial acessivel</div>
-          <h1>Treinamento corporativo com Libras, legendas e evidencia de progresso.</h1>
-          <p class="lead">SOUND QUEST e a plataforma SaaS para empresas que precisam capacitar equipes industriais com inclusao, conformidade e visibilidade gerencial.</p>
-          <div class="hero-actions">
-            <a class="btn btn-primary" href="#/login">Acessar plataforma</a>
-            <a class="btn btn-ghost" href="#/cadastro">Cadastrar empresa</a>
-          </div>
-        </div>
-        <div class="hero-card">
-          <h3>Painel executivo em tempo real</h3>
-          <p>Acompanhe adesao, avaliacoes e certificados com comunicacao visual clara para toda a operacao.</p>
-          <div class="stat-row">
-            <div class="stat"><b>98%</b>conteudo com legendas</div>
-            <div class="stat"><b>100%</b>trilhas com Libras</div>
-            <div class="stat"><b>NR</b>treinamentos oficiais</div>
-          </div>
-        </div>
-      </div>
-      <section class="section alt" id="beneficios">
-        <div class="container">
-          <div class="kicker">Objetivo</div>
-          <h2>Capacitar com seguranca, inclusao e padrao industrial</h2>
-          <div class="grid-3" style="margin-top:24px">
-            ${[
-              ["01", "Conformidade", "Treinamentos de SST, qualidade e operacao com registro de progresso e certificado."],
-              ["02", "Inclusao real", "Libras, legendas, alto contraste e linguagem visual para pessoas com deficiencia auditiva."],
-              ["03", "Gestao", "A empresa cadastra colaboradores, cria trilhas, mede resultados e emite relatorios."]
-            ].map(([n, t, d]) => `<article class="card"><div class="icon-badge">${n}</div><h3>${t}</h3><p>${d}</p></article>`).join("")}
-          </div>
-        </div>
-      </section>
-      <section class="section" id="acessibilidade">
-        <div class="container grid-2">
-          <div>
-            <div class="kicker">Acessibilidade</div>
-            <h2>Projetado para o chao de fabrica e para a governanca de RH.</h2>
-            <p class="lead">Interface simples, icones consistentes e conteudo visual. Nenhum recurso depende apenas de audio.</p>
-            <ul>
-              <li>Interpretacao em Libras nos modulos</li>
-              <li>Legendas e textos explicativos nos conteudos visuais</li>
-              <li>Alto contraste e ajuste de tamanho de texto</li>
-              <li>Progresso visual e avaliacoes objetivas</li>
-            </ul>
-          </div>
-          <div class="card">
-            <h3>Recursos nativos</h3>
-            <p>Use o painel flutuante para ativar alto contraste e ampliar o texto em qualquer pagina.</p>
-            <div class="progress" style="margin:16px 0"><span style="width:82%"></span></div>
-            <p>82% da trilha NR-12 concluida com apoio de Libras.</p>
-          </div>
-        </div>
-      </section>
-      <section class="section alt" id="solucao">
-        <div class="container">
-          <div class="kicker">Plataforma</div>
-          <h2>Do onboarding ao certificado, em um unico sistema.</h2>
-          <div class="grid-3" style="margin-top:24px">
-            ${[
-              ["Colaborador", "Dashboard, trilhas, atividades, progresso e certificados digitais."],
-              ["Empresa", "CRUD de pessoas e treinamentos, relatorios, graficos e acompanhamento."],
-              ["Seguranca", "Autenticacao, perfis de acesso, validacoes e historico de avaliacoes."]
-            ].map(([t, d]) => `<article class="card"><h3>${t}</h3><p>${d}</p></article>`).join("")}
-          </div>
-        </div>
-      </section>
-      <footer class="footer"><div class="container">SOUND QUEST - Capacitacao industrial acessivel para empresas.</div></footer>
-    </div>
-    ${a11yBar()}
-  `;
+function dashboardFor(user) {
+  return "/app/dashboard";
 }
 
 function renderAuth(mode) {
   const isLogin = mode === "login";
   app.innerHTML = `
     <div class="auth-wrap">
-      <aside class="auth-side">
+      <aside class="auth-side" style="background:linear-gradient(165deg,#0b5c3a,#0f7a4a 60%,#16a34a);color:#fff">
         ${logo("light")}
-        <h1 style="color:#fff;margin-top:24px">Ambiente corporativo seguro.</h1>
-        <p>Acesso separado para empresa e colaborador, com controle de progresso e evidencias de capacitacao.</p>
+        <p class="kicker" style="color:#bbf7d0;margin-top:28px">Acesso corporativo</p>
+        <h1 style="color:#fff;margin-top:8px">Capacitacao industrial acessivel.</h1>
+        <p>Entre com o e-mail e a senha da sua conta. Colaboradores e gestores usam a mesma tela de login.</p>
+        <ul class="auth-points">
+          <li>Login unificado por e-mail</li>
+          <li>Redirecionamento automatico ao painel do seu perfil</li>
+          <li>Recuperacao de senha segura</li>
+        </ul>
       </aside>
       <div class="auth-form">
-        <form class="form card" id="auth-form">
+        <form class="form card auth-card" id="auth-form" novalidate>
           <h2>${isLogin ? "Entrar" : "Criar conta"}</h2>
-          <p>Use os acessos de demonstracao ou cadastre uma nova conta.</p>
+          <p>${isLogin ? "Use o e-mail cadastrado, seja colaborador ou gestor." : "Cadastre uma nova conta corporativa."}</p>
           ${isLogin ? "" : `
-            <label>Nome completo</label>
-            <input name="name" required />
-            <label>Perfil</label>
-            <select name="role">
+            <label for="auth-name">Nome completo</label>
+            <input id="auth-name" name="name" required autocomplete="name" />
+            <label for="auth-role">Perfil</label>
+            <select id="auth-role" name="role">
               <option value="collaborator">Colaborador</option>
               <option value="company">Empresa</option>
             </select>
-            <label>Empresa (se for gestor)</label>
-            <input name="company_name" placeholder="Nordeste Industrial S.A." />
-            <label>Area / cargo</label>
-            <input name="department" placeholder="Producao" />
-            <input name="position" placeholder="Operador" style="margin-top:8px" />
+            <label for="auth-company">Empresa (se for gestor)</label>
+            <input id="auth-company" name="company_name" placeholder="Nordeste Industrial S.A." />
+            <label for="auth-dept">Area / cargo</label>
+            <input id="auth-dept" name="department" placeholder="Producao" />
+            <input id="auth-position" name="position" placeholder="Operador" style="margin-top:8px" />
           `}
-          <label>E-mail corporativo</label>
-          <input type="email" name="email" required />
-          <label>Senha</label>
-          <input type="password" name="password" required minlength="6" />
-          <div id="auth-error"></div>
-          <button class="btn btn-primary" style="width:100%;margin-top:16px" type="submit">${isLogin ? "Acessar" : "Cadastrar"}</button>
+          <label for="auth-email">E-mail</label>
+          <input id="auth-email" type="email" name="email" required autocomplete="username" placeholder="nome@empresa.com" />
+          <label for="auth-password">Senha</label>
+          <input id="auth-password" type="password" name="password" required minlength="6" autocomplete="${isLogin ? "current-password" : "new-password"}" />
+          ${isLogin ? `<div class="auth-forgot"><a href="#/recuperar-senha">Esqueceu a senha?</a></div>` : ""}
+          <div id="auth-error" role="alert" aria-live="polite"></div>
+          <button class="btn btn-primary" style="width:100%;margin-top:16px;background:#0f7a4a;color:#fff;border:0" type="submit">${isLogin ? "Entrar" : "Cadastrar"}</button>
           <p style="margin-top:14px">${isLogin ? 'Nao tem conta? <a href="#/cadastro">Cadastre-se</a>' : 'Ja possui acesso? <a href="#/login">Entrar</a>'}</p>
-          ${isLogin ? `<p style="color:var(--muted);font-size:.9rem">Demo empresa: empresa@soundquest.com / 123456<br>Demo colaborador: joao@soundquest.com / 123456</p>` : ""}
         </form>
       </div>
     </div>
@@ -218,6 +147,13 @@ function renderAuth(mode) {
     const fd = new FormData(e.target);
     const payload = Object.fromEntries(fd.entries());
     const box = document.getElementById("auth-error");
+    const btn = e.target.querySelector('button[type="submit"]');
+    box.innerHTML = "";
+    if (!payload.email || !payload.password) {
+      box.innerHTML = `<div class="error">Informe e-mail e senha.</div>`;
+      return;
+    }
+    btn.disabled = true;
     try {
       const data = await api(isLogin ? "/api/auth/login" : "/api/auth/register", {
         method: "POST",
@@ -226,14 +162,137 @@ function renderAuth(mode) {
       setSession(data.token, data.user, data.company);
       state.user = data.user;
       state.company = data.company;
-      go("/app/dashboard");
+      go(dashboardFor(data.user));
     } catch (err) {
       box.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+
+function renderForgot() {
+  app.innerHTML = `
+    <div class="auth-wrap">
+      <aside class="auth-side" style="background:linear-gradient(165deg,#0b5c3a,#0f7a4a 60%,#16a34a);color:#fff">
+        ${logo("light")}
+        <p class="kicker" style="color:#bbf7d0;margin-top:28px">Recuperacao segura</p>
+        <h1 style="color:#fff;margin-top:8px">Redefina o acesso com seguranca.</h1>
+        <p>Enviamos um link de uso unico, valido por 1 hora. O e-mail nao e confirmado publicamente para proteger as contas.</p>
+      </aside>
+      <div class="auth-form">
+        <form class="form card auth-card" id="forgot-form" novalidate>
+          <h2>Esqueceu a senha?</h2>
+          <p>Informe o e-mail cadastrado para iniciar a recuperacao.</p>
+          <label for="forgot-email">E-mail</label>
+          <input id="forgot-email" type="email" name="email" required autocomplete="username" placeholder="nome@empresa.com" />
+          <div id="auth-error" role="alert" aria-live="polite"></div>
+          <button class="btn btn-primary" style="width:100%;margin-top:16px;background:#0f7a4a;color:#fff;border:0" type="submit">Enviar instrucoes</button>
+          <p style="margin-top:14px"><a href="#/login">Voltar ao login</a></p>
+        </form>
+      </div>
+    </div>
+    ${a11yBar()}
+  `;
+  document.getElementById("forgot-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const email = new FormData(e.target).get("email");
+    const box = document.getElementById("auth-error");
+    const btn = e.target.querySelector('button[type="submit"]');
+    box.innerHTML = "";
+    if (!email) {
+      box.innerHTML = `<div class="error">Informe um e-mail valido.</div>`;
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const data = await api("/api/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email })
+      });
+      const extra = data.reset_path
+        ? `<p class="auth-reset-link">Ambiente de demonstracao: <a href="${escapeHtml(data.reset_path)}">abrir link de redefinicao</a></p>`
+        : "";
+      box.innerHTML = `<div class="okmsg">${escapeHtml(data.message)}${extra}</div>`;
+    } catch (err) {
+      box.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+
+function renderReset() {
+  const params = new URLSearchParams(location.hash.split("?")[1] || "");
+  const token = params.get("token") || "";
+  app.innerHTML = `
+    <div class="auth-wrap">
+      <aside class="auth-side" style="background:linear-gradient(165deg,#0b5c3a,#0f7a4a 60%,#16a34a);color:#fff">
+        ${logo("light")}
+        <p class="kicker" style="color:#bbf7d0;margin-top:28px">Nova senha</p>
+        <h1 style="color:#fff;margin-top:8px">Defina uma senha nova.</h1>
+        <p>O codigo de recuperacao e de uso unico e expira em 1 hora.</p>
+      </aside>
+      <div class="auth-form">
+        <form class="form card auth-card" id="reset-form" novalidate>
+          <h2>Redefinir senha</h2>
+          <p>Escolha uma nova senha com no minimo 6 caracteres.</p>
+          <input type="hidden" name="token" value="${escapeHtml(token)}" />
+          ${token ? "" : `
+            <label for="reset-token">Codigo de recuperacao</label>
+            <input id="reset-token" name="token_input" required autocomplete="off" />
+          `}
+          <label for="reset-password">Nova senha</label>
+          <input id="reset-password" type="password" name="password" required minlength="6" autocomplete="new-password" />
+          <label for="reset-password2">Confirmar senha</label>
+          <input id="reset-password2" type="password" name="password2" required minlength="6" autocomplete="new-password" />
+          <div id="auth-error" role="alert" aria-live="polite"></div>
+          <button class="btn btn-primary" style="width:100%;margin-top:16px;background:#0f7a4a;color:#fff;border:0" type="submit">Salvar nova senha</button>
+          <p style="margin-top:14px"><a href="#/login">Voltar ao login</a></p>
+        </form>
+      </div>
+    </div>
+    ${a11yBar()}
+  `;
+  document.getElementById("reset-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const tokenValue = fd.get("token") || fd.get("token_input");
+    const password = fd.get("password");
+    const password2 = fd.get("password2");
+    const box = document.getElementById("auth-error");
+    const btn = e.target.querySelector('button[type="submit"]');
+    box.innerHTML = "";
+    if (!tokenValue) {
+      box.innerHTML = `<div class="error">Codigo de recuperacao ausente ou invalido.</div>`;
+      return;
+    }
+    if (!password || String(password).length < 6) {
+      box.innerHTML = `<div class="error">A senha deve ter no minimo 6 caracteres.</div>`;
+      return;
+    }
+    if (password !== password2) {
+      box.innerHTML = `<div class="error">As senhas nao coincidem.</div>`;
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const data = await api("/api/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token: tokenValue, password })
+      });
+      box.innerHTML = `<div class="okmsg">${escapeHtml(data.message)}</div>`;
+      setTimeout(() => go("/login"), 1200);
+    } catch (err) {
+      box.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    } finally {
+      btn.disabled = false;
     }
   };
 }
 
 async function renderApp() {
+  unmountInterprete();
   const user = state.user;
   const parts = state.route.split("/").filter(Boolean);
   const page = parts[1] || "dashboard";
@@ -243,12 +302,13 @@ async function renderApp() {
     ? [
         ["dashboard", "Dashboard"],
         ["sinais", "Sinais da fábrica"],
-        ["colaboradores", "Funcionarios"],
+        ["colaboradores", "Funcionários"],
         ["treinamentos", "Treinamentos"],
+        ["tarefas", "Tarefas"],
         ["progresso", "Acompanhamento"],
         ["avaliacoes", "Resultados"],
         ["certificados", "Certificados"],
-        ["relatorios", "Relatorios"],
+        ["relatorios", "Relatórios"],
         ["acessibilidade", "Acessibilidade"],
         ["perfil", "Perfil"]
       ]
@@ -256,7 +316,8 @@ async function renderApp() {
         ["dashboard", "Dashboard"],
         ["sinais", "Sinais da fábrica"],
         ["meus", "Meus treinamentos"],
-        ["avaliacoes", "Avaliacoes"],
+        ["tarefas", "Tarefas"],
+        ["avaliacoes", "Avaliações"],
         ["certificados", "Certificados"],
         ["acessibilidade", "Acessibilidade"],
         ["perfil", "Meu perfil"]
@@ -269,7 +330,7 @@ async function renderApp() {
       <aside class="sidebar" id="sidebar">
         ${logo("light")}
         <p style="opacity:.8;font-size:.85rem;margin:12px 8px 18px">${escapeHtml(state.company?.name || "Empresa")}</p>
-        <div class="side-role">${isCompany ? "Gestao empresarial" : "Area do colaborador"}</div>
+        <div class="side-role">${isCompany ? "Gestão empresarial" : "Área do colaborador"}</div>
         <nav class="side-nav">
           ${nav.map(([k, l]) => `<a class="${page === k ? "active" : ""}" ${page === k ? 'aria-current="page"' : ""} href="#/app/${k}">${l}</a>`).join("")}
           <button id="logout">Sair</button>
@@ -281,11 +342,11 @@ async function renderApp() {
             <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">Menu</button>
             ${logoMark("sm")}
             <div>
-              <div class="kicker">${isCompany ? "Area da empresa" : "Area do colaborador"}</div>
+              <div class="kicker">${isCompany ? "Área da empresa" : "Área do colaborador"}</div>
               <h2 style="margin:0">${pageTitle}</h2>
             </div>
           </div>
-          <div class="userchip"><span class="avatar">${initials(user.name)}</span><div><b>${escapeHtml(user.name)}</b><div style="color:var(--muted);font-size:.8rem">${isCompany ? "Gestao" : "Colaborador"}</div></div></div>
+          <div class="userchip"><span class="avatar">${initials(user.name)}</span><div><b>${escapeHtml(user.name)}</b><div style="color:var(--muted);font-size:.8rem">${isCompany ? "Gestão" : "Colaborador"}</div></div></div>
         </div>
         <div id="view">Carregando...</div>
       </main>
@@ -309,6 +370,8 @@ async function renderApp() {
       else if (page === "colaboradores") await companyPeople(view);
       else if (page === "treinamentos" && sub) await companyTrainingEditor(view, sub);
       else if (page === "treinamentos") await companyTrainings(view);
+      else if (page === "tarefas" && sub) await companyTaskDetail(view, sub);
+      else if (page === "tarefas") await companyTasks(view);
       else if (page === "progresso") await companyProgress(view);
       else if (page === "avaliacoes") await companyAttempts(view);
       else if (page === "certificados" && sub) await certificateDetail(view, sub);
@@ -323,6 +386,7 @@ async function renderApp() {
       else if (page === "catalogo") await catalogView(view);
       else if (page === "meus") await myTrainingsView(view);
       else if (page === "curso" && sub) await courseView(view, sub);
+      else if (page === "tarefas") await collabTasks(view);
       else if (page === "avaliacoes") await collabAssessments(view);
       else if (page === "certificados" && sub) await certificateDetail(view, sub);
       else if (page === "certificados") await certificatesView(view, false);
@@ -339,7 +403,21 @@ async function renderApp() {
 function statusLabel(e) {
   if (e.status === "completed") return "Concluido";
   if (e.stage === "exam") return "Avaliacao pendente";
+  if (e.stage === "tasks") return "Tarefas pendentes";
+  if (e.stage === "quizzes") return "Atividades pendentes";
   return "Em andamento";
+}
+
+function taskStatusLabel(status) {
+  if (status === "approved") return "Aprovada";
+  if (status === "rejected") return "Devolver";
+  if (status === "submitted") return "Enviada";
+  return "Pendente";
+}
+
+function taskBadge(status) {
+  const cls = status === "approved" ? "badge-ok" : status === "submitted" ? "badge-info" : "badge-warn";
+  return `<span class="badge ${cls}">${taskStatusLabel(status)}</span>`;
 }
 
 async function collabDashboard(view) {
@@ -354,7 +432,7 @@ async function collabDashboard(view) {
     <div class="card" style="margin-bottom:18px">
       <h3>Progresso geral</h3>
       <div class="progress" style="height:14px"><span style="width:${d.stats.avg_progress}%"></span></div>
-      <p style="margin:10px 0 0">Media de ${d.stats.avg_progress}% nas trilhas inscritas. O 100% so e liberado apos modulos e avaliacao.</p>
+      <p style="margin:10px 0 0">Media de ${d.stats.avg_progress}% nas trilhas inscritas. O 100% so e liberado apos modulos, tarefas e avaliacao.</p>
     </div>
     <div class="grid-2">
       <div class="card">
@@ -373,6 +451,11 @@ async function collabDashboard(view) {
         <a class="btn btn-ghost btn-sm" href="#/app/meus">Ver trilhas</a>
       </div>
     </div>
+    ${(d.tasks || []).length ? `<div class="card" style="margin-top:18px">
+      <h3>Tarefas do treinamento</h3>
+      ${(d.tasks || []).map((tk) => `<p><b>${escapeHtml(tk.title)}</b> ${taskBadge(tk.status)}<br><span style="color:var(--muted)">${escapeHtml(tk.training_title)}${tk.due_at ? " · prazo " + fmtDate(tk.due_at) : ""}</span></p>`).join("")}
+      <a class="btn btn-primary btn-sm" href="#/app/tarefas">Abrir tarefas</a>
+    </div>` : ""}
   `;
 }
 
@@ -416,8 +499,16 @@ async function myTrainingsView(view) {
 function progressCaption(info) {
   if (!info) return "0%";
   if (info.completed) return "100% concluido";
-  if (info.stage === "exam") return `${info.display}% · avaliacao pendente`;
+  if (info.stage === "exam") return `${info.display}% · avaliacao final pendente`;
+  if (info.stage === "tasks") return `${info.display}% · tarefas do treinamento pendentes`;
+  if (info.stage === "quizzes") return `${info.display}% · atividades do modulo pendentes`;
   return `${info.display}% · modulos em andamento`;
+}
+
+function quizPassed(module, info) {
+  const state = info?.quizzes?.byModule?.[module.id];
+  if (state) return !!state.passed;
+  return (module.quizBest || 0) >= (module.quiz?.passing_score || 70);
 }
 
 async function courseView(view, id) {
@@ -442,7 +533,9 @@ async function courseView(view, id) {
             <p id="prog-label">${progressCaption(info)}</p>
           </div>
           <ol class="flow-steps">
-            <li class="${info.content > 0 || info.completed ? "done" : "current"}">Modulos</li>
+            <li class="${info.content > 0 || info.completed ? "done" : "current"}">Conteudos</li>
+            <li class="${info.stage === "quizzes" ? "current" : info.quizzes?.allPassed || info.completed ? "done" : ""}">Atividades</li>
+            <li class="${info.stage === "tasks" ? "current" : info.tasks?.allSubmitted || info.completed ? "done" : ""}">Tarefas</li>
             <li class="${info.stage === "exam" ? "current" : info.completed || info.exam?.passed ? "done" : ""}">Avaliacao</li>
             <li class="${info.completed ? "done" : ""}">Certificado</li>
           </ol>
@@ -454,9 +547,13 @@ async function courseView(view, id) {
                   .map(
                     (c) => `<div class="module-item" data-cid="${c.id}">${completed.has(c.id) ? "●" : "○"} ${escapeHtml(c.title)}</div>`
                   )
-                  .join("")}</div>`
+                  .join("")}
+                ${m.quiz ? `<div class="module-item" data-qid="${m.quiz.id}">${quizPassed(m, info) ? "●" : "○"} Atividade do modulo</div>` : ""}
+                ${(t.tasks || []).filter((tk) => tk.module_id === m.id).map((tk) => `<div class="module-item" data-tid="${tk.id}">${tk.submission && (tk.submission.status === "submitted" || tk.submission.status === "approved") ? "●" : "○"} Tarefa: ${escapeHtml(tk.title)}</div>`).join("")}
+                </div>`
               )
-              .join("")}
+               .join("")}
+            ${(t.tasks || []).filter((tk) => !tk.module_id).map((tk) => `<div class="card" style="padding:12px"><div class="module-item" data-tid="${tk.id}">${tk.submission && (tk.submission.status === "submitted" || tk.submission.status === "approved") ? "●" : "○"} Tarefa: ${escapeHtml(tk.title)}</div></div>`).join("")}
           </div>
         </div>
         <div>
@@ -466,7 +563,9 @@ async function courseView(view, id) {
         </div>
       </div>
     `;
-    view.querySelectorAll(".module-item").forEach((el) => (el.onclick = () => show(Number(el.dataset.cid))));
+    view.querySelectorAll("[data-cid]").forEach((el) => (el.onclick = () => show(Number(el.dataset.cid))));
+    view.querySelectorAll("[data-qid]").forEach((el) => (el.onclick = () => showQuiz(Number(el.dataset.qid))));
+    view.querySelectorAll("[data-tid]").forEach((el) => (el.onclick = () => showTask(Number(el.dataset.tid))));
   };
 
   const syncProgress = (next) => {
@@ -475,7 +574,9 @@ async function courseView(view, id) {
       content: next.content ?? info.content,
       stage: next.stage ?? info.stage,
       completed: !!next.completed,
-      exam: next.exam || info.exam
+      exam: next.exam || info.exam,
+      quizzes: next.quizzes || info.quizzes,
+      tasks: next.tasks || info.tasks
     };
     const bar = document.getElementById("bar");
     const label = document.getElementById("prog-label");
@@ -489,8 +590,8 @@ async function courseView(view, id) {
       if (exam) exam.innerHTML = "";
       return;
     }
-    if (info.content < 100) {
-      exam.innerHTML = `<h3>Avaliacao</h3><p>Conclua todos os modulos para liberar a avaliacao. O treinamento so chega a 100% apos a aprovacao.</p>`;
+    if (info.content < 100 || (info.quizzes && !info.quizzes.allPassed) || (info.tasks && !info.tasks.allSubmitted)) {
+      exam.innerHTML = `<h3>Avaliacao final</h3><p>Conclua conteudos, atividades de cada modulo e as tarefas obrigatorias para liberar a avaliacao final. Nota minima ${t.activity.passing_score}%.</p>`;
       return;
     }
     if (info.completed) {
@@ -498,9 +599,10 @@ async function courseView(view, id) {
         <a class="btn btn-primary btn-sm" href="#/app/certificados">Ver certificado</a>`;
       return;
     }
-    startQuiz(exam, t, info, (result) => {
+    startQuiz(exam, t.activity, { kind: "final" }, (result) => {
       syncProgress(result);
       if (result.certificate) t.certificate = result.certificate;
+      if (result.quizzes) info.quizzes = result.quizzes;
       renderExam();
       renderCert();
     });
@@ -561,61 +663,167 @@ async function courseView(view, id) {
     }
   };
 
+  const showQuiz = (quizId) => {
+    const lesson = document.getElementById("lesson");
+    const examBox = document.getElementById("exam");
+    if (examBox) examBox.innerHTML = "";
+    const mod = t.modules.find((m) => m.quiz?.id === quizId);
+    if (!mod || !lesson) return;
+    view.querySelectorAll(".module-item").forEach((el) => el.classList.toggle("active", Number(el.dataset.qid) === quizId));
+    const moduleContents = mod.contents || [];
+    const moduleDone = moduleContents.every((c) => completed.has(c.id));
+    const runModuleQuiz = () => {
+      startQuiz(lesson, mod.quiz, { kind: "module", moduleTitle: mod.title }, (result) => {
+        syncProgress(result);
+        if (result.quizzes) info.quizzes = result.quizzes;
+        mod.quizBest = result.score;
+        const item = view.querySelector(`.module-item[data-qid="${mod.quiz.id}"]`);
+        if (item && result.passed) item.innerHTML = `● Atividade do modulo`;
+        renderExam();
+        renderCert();
+      });
+    };
+    if (!moduleDone) {
+      lesson.innerHTML = `<div class="kicker">${escapeHtml(mod.title)}</div><h3>Atividade do modulo</h3><p>Conclua os conteudos desta etapa para liberar as perguntas.</p>`;
+      return;
+    }
+    if (quizPassed(mod, info)) {
+      lesson.innerHTML = `<div class="kicker">${escapeHtml(mod.title)}</div><h3>${escapeHtml(mod.quiz.title)}</h3>
+        <div class="okmsg">Atividade concluida. Melhor nota ${mod.quizBest || info.quizzes?.byModule?.[mod.id]?.bestScore || 0}%.</div>
+        <button class="btn btn-ghost" id="retry-mod">Refazer atividade</button>`;
+      const retry = document.getElementById("retry-mod");
+      if (retry) retry.onclick = () => runModuleQuiz();
+      return;
+    }
+    runModuleQuiz();
+  };
+
+  const showTask = (taskId) => {
+    const lesson = document.getElementById("lesson");
+    const examBox = document.getElementById("exam");
+    if (examBox) examBox.innerHTML = "";
+    const tk = (t.tasks || []).find((x) => x.id === taskId);
+    if (!tk || !lesson) return;
+    view.querySelectorAll(".module-item").forEach((el) => el.classList.toggle("active", Number(el.dataset.tid) === taskId));
+    const sub = tk.submission;
+    const status = sub?.status || "pending";
+    const canSend = status === "pending" || status === "rejected";
+    lesson.innerHTML = `
+      <div class="kicker">Tarefa do treinamento${tk.module_title ? " · " + escapeHtml(tk.module_title) : ""}</div>
+      <h3>${escapeHtml(tk.title)}</h3>
+      <p>${escapeHtml(tk.instructions || "")}</p>
+      ${tk.due_at ? `<p style="color:var(--muted)">Prazo ${fmtDate(tk.due_at)}</p>` : ""}
+      ${taskBadge(status)}
+      ${status === "rejected" && sub?.result_note ? `<div class="error">${escapeHtml(sub.result_note)}</div>` : ""}
+      ${status === "approved" && sub?.result_note ? `<div class="okmsg">${escapeHtml(sub.result_note)}</div>` : ""}
+      ${status === "submitted" ? `<div class="okmsg">Resposta enviada. Aguarde a avaliacao da empresa.</div><p style="white-space:pre-wrap">${escapeHtml(sub.answer || "")}</p>` : ""}
+      ${status === "approved" ? `<p style="white-space:pre-wrap">${escapeHtml(sub.answer || "")}</p>` : ""}
+      ${canSend ? `<form id="task-send">
+        <label>Sua resposta</label>
+        <textarea name="answer" required placeholder="Descreva a evidencia visual do posto">${escapeHtml(sub?.answer || "")}</textarea>
+        <div id="task-msg"></div>
+        <button class="btn btn-primary" type="submit">Enviar tarefa</button>
+      </form>` : ""}
+    `;
+    const form = document.getElementById("task-send");
+    if (form) {
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const answer = new FormData(form).get("answer");
+        try {
+          const r = await api(`/api/tasks/${tk.id}/submit`, { method: "POST", body: JSON.stringify({ answer }) });
+          tk.submission = r.submission;
+          syncProgress(r);
+          const item = view.querySelector(`.module-item[data-tid="${tk.id}"]`);
+          if (item) item.innerHTML = `● Tarefa: ${escapeHtml(tk.title)}`;
+          renderExam();
+          renderCert();
+          showTask(tk.id);
+        } catch (err) {
+          document.getElementById("task-msg").innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+        }
+      };
+    }
+  };
+
   renderShell();
   if (currentId) show(currentId);
   renderExam();
   renderCert();
 }
 
-function startQuiz(exam, t, info, onDone) {
-  const questions = t.activity.questions || [];
+function startQuiz(box, activity, meta, onDone) {
+  const questions = activity.questions || [];
+  if (!questions.length) {
+    box.innerHTML = `<div class="error">Esta atividade ainda nao possui perguntas.</div>`;
+    return;
+  }
   let idx = 0;
   const answers = {};
+  const results = {};
+  const isFinal = meta.kind === "final";
   const draw = () => {
     const q = questions[idx];
+    const answered = results[q.id];
     const pct = Math.round((idx / questions.length) * 100);
-    exam.innerHTML = `
-      <div class="kicker">Avaliacao</div>
-      <h3>${escapeHtml(t.activity.title)}</h3>
+    box.innerHTML = `
+      <div class="kicker">${isFinal ? "Avaliacao final" : "Atividade do modulo"}</div>
+      <h3>${escapeHtml(activity.title)}</h3>
+      ${meta.moduleTitle ? `<p>${escapeHtml(meta.moduleTitle)}</p>` : ""}
       <p>Questao ${idx + 1} de ${questions.length}</p>
       <div class="progress"><span style="width:${pct}%"></span></div>
       <fieldset class="quiz-q">
         <legend><b>${escapeHtml(q.prompt)}</b></legend>
         ${q.options
           .map(
-            (o) => `<label class="quiz-opt"><input type="radio" name="opt" value="${o.id}" ${answers[q.id] === o.id ? "checked" : ""} /> ${escapeHtml(o.label)}</label>`
+            (o) => `<label class="quiz-opt"><input type="radio" name="opt" value="${o.id}" ${answers[q.id] === o.id ? "checked" : ""} ${answered ? "disabled" : ""} /> ${escapeHtml(o.label)}</label>`
           )
           .join("")}
       </fieldset>
-      <div id="quiz-msg"></div>
+      <div id="quiz-msg">${answered ? `<div class="${answered.correct ? "okmsg" : "error"}">${answered.correct ? "Resposta correta." : "Resposta incorreta."}</div>` : ""}</div>
       <div class="row-actions">
         ${idx > 0 ? `<button class="btn btn-ghost" id="qprev" type="button">Voltar</button>` : ""}
-        <button class="btn btn-primary" id="qnext" type="button">${idx === questions.length - 1 ? "Enviar avaliacao" : "Proxima"}</button>
+        <button class="btn btn-primary" id="qnext" type="button">${answered ? (idx === questions.length - 1 ? "Ver pontuacao" : "Proxima") : "Responder"}</button>
       </div>
     `;
     document.getElementById("qnext").onclick = async () => {
-      const sel = exam.querySelector("input[name=opt]:checked");
-      if (!sel) {
-        document.getElementById("quiz-msg").innerHTML = `<div class="error">Selecione uma alternativa.</div>`;
+      if (!results[q.id]) {
+        const sel = box.querySelector("input[name=opt]:checked");
+        if (!sel) {
+          document.getElementById("quiz-msg").innerHTML = `<div class="error">Selecione uma alternativa.</div>`;
+          return;
+        }
+        answers[q.id] = Number(sel.value);
+        try {
+          const check = await api(`/api/activities/${activity.id}/check`, {
+            method: "POST",
+            body: JSON.stringify({ question_id: q.id, option_id: Number(sel.value) })
+          });
+          results[q.id] = check;
+          draw();
+        } catch (err) {
+          document.getElementById("quiz-msg").innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+        }
         return;
       }
-      answers[q.id] = Number(sel.value);
       if (idx < questions.length - 1) {
         idx += 1;
         draw();
         return;
       }
       try {
-        const r = await api(`/api/activities/${t.activity.id}/submit`, { method: "POST", body: JSON.stringify({ answers }) });
-        exam.innerHTML = `<div role="status" class="${r.passed ? "okmsg" : "error"}">
+        const r = await api(`/api/activities/${activity.id}/submit`, { method: "POST", body: JSON.stringify({ answers }) });
+        box.innerHTML = `<div role="status" class="${r.passed ? "okmsg" : "error"}">
             <h3>${r.passed ? "Aprovado" : "Reprovado"}</h3>
-            <p>Nota ${r.score}% · ${r.correct} de ${r.total} acertos · minimo ${r.passing_score}%</p>
+            <p>Pontuacao ${r.score}% · ${r.correct} de ${r.total} acertos · minimo ${r.passing_score}%</p>
           </div>
           ${r.passed
-            ? `<p>Treinamento 100% concluido. Certificado liberado.</p><a class="btn btn-primary" href="#/app/certificados">Ver certificado</a>`
-            : `<p>Revise os modulos e tente novamente.</p><button class="btn btn-dark" id="retry">Refazer avaliacao</button>`}`;
+            ? (isFinal
+              ? `<p>Treinamento 100% concluido. Certificado liberado.</p><a class="btn btn-primary" href="#/app/certificados">Ver certificado</a>`
+              : `<p>Atividade desta etapa concluida. Avance para o proximo modulo ou para a avaliacao final.</p>`)
+            : `<p>Revise o conteudo e tente novamente. Nota minima 70%.</p><button class="btn btn-dark" id="retry">Refazer</button>`}`;
         const retry = document.getElementById("retry");
-        if (retry) retry.onclick = () => startQuiz(exam, t, info, onDone);
+        if (retry) retry.onclick = () => startQuiz(box, activity, meta, onDone);
         onDone(r);
       } catch (err) {
         document.getElementById("quiz-msg").innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
@@ -651,7 +859,7 @@ function certCard(c, actions = true) {
       </div>`;
 }
 
-async function certificatesView(view, company) {
+async function certificatesView(view) {
   const rows = await api("/api/certificates");
   view.innerHTML = rows.map((c) => certCard(c)).join("") || "<div class='card'>Nenhum certificado emitido.</div>";
   view.querySelectorAll("[data-print]").forEach((b) => {
@@ -677,12 +885,12 @@ async function collabAssessments(view) {
       ${(d.trainings || []).map((t) => {
         const modulesDone = t.total_contents && t.done_contents >= t.total_contents;
         const passed = t.best_score != null && t.best_score >= (t.passing_score || 70);
-        let stateTxt = "Modulos pendentes";
-        if (!t.activity_id) stateTxt = "Sem avaliacao";
-        else if (!modulesDone) stateTxt = "Conclua os modulos para liberar";
+        let stateTxt = "Conteudos e atividades pendentes";
+        if (!t.activity_id) stateTxt = "Sem avaliacao final";
+        else if (!modulesDone) stateTxt = "Conclua os conteudos e as atividades de cada modulo";
         else if (passed) stateTxt = `Aprovado · melhor nota ${t.best_score}%`;
         else if (t.best_score != null) stateTxt = `Reprovado · ${t.best_score}% · refazer`;
-        else stateTxt = "Avaliacao liberada";
+        else stateTxt = "Avaliacao final liberada";
         return `<div style="margin:12px 0;padding-bottom:12px;border-bottom:1px solid var(--line)">
           <b>${escapeHtml(t.title)}</b>
           <p style="margin:4px 0;color:var(--muted)">${stateTxt}</p>
@@ -694,7 +902,7 @@ async function collabAssessments(view) {
       <h3>Historico de tentativas</h3>
       <table class="table">
         <tr><th>Treinamento</th><th>Nota</th><th>Resultado</th><th>Data</th></tr>
-        ${(d.attempts || []).map((a) => `<tr><td>${escapeHtml(a.training_title)}</td><td>${a.score}%</td><td><span class="badge ${a.passed ? "badge-ok" : "badge-warn"}">${a.passed ? "Aprovado" : "Reprovado"}</span></td><td>${fmtDate(a.created_at)}</td></tr>`).join("") || "<tr><td colspan='4'>Nenhuma tentativa ainda.</td></tr>"}
+         ${(d.attempts || []).map((a) => `<tr><td>${escapeHtml(a.training_title)} · ${escapeHtml(a.activity_title || "")}</td><td>${a.score}%</td><td><span class="badge ${a.passed ? "badge-ok" : "badge-warn"}">${a.passed ? "Aprovado" : "Reprovado"}</span></td><td>${fmtDate(a.created_at)}</td></tr>`).join("") || "<tr><td colspan='4'>Nenhuma tentativa ainda.</td></tr>"}
       </table>
     </div>
   `;
@@ -797,6 +1005,12 @@ async function companyDashboard(view) {
       <div class="card kpi"><span>Conclusoes</span><b>${d.stats.completed}</b></div>
       <div class="card kpi"><span>Certificados</span><b>${d.stats.certificates}</b></div>
     </div>
+    ${d.stats.tasks ? `<div class="kpis">
+      <div class="card kpi"><span>Tarefas pendentes</span><b>${d.stats.tasks.pending || 0}</b></div>
+      <div class="card kpi"><span>Tarefas enviadas</span><b>${d.stats.tasks.submitted || 0}</b></div>
+      <div class="card kpi"><span>Tarefas aprovadas</span><b>${d.stats.tasks.approved || 0}</b></div>
+      <div class="card kpi"><span>Total de tarefas</span><b>${d.stats.tasks.total || 0}</b></div>
+    </div>` : ""}
     <div class="grid-2">
       <div class="card">
         <h3>Progresso por treinamento</h3>
@@ -949,6 +1163,7 @@ async function companyTrainingEditor(view, id) {
             <b>${escapeHtml(m.title)}</b>
             <button class="btn btn-danger btn-sm" data-dmod="${m.id}">Excluir modulo</button>
             ${m.contents.map((c) => `<p>${escapeHtml(c.title)} · ${c.type} <button class="btn btn-danger btn-sm" data-dcon="${c.id}">x</button></p>`).join("")}
+            <p>${m.quiz ? `Atividade do modulo: ${m.quiz.questions?.length || 0} perguntas` : "Atividade do modulo sera gerada automaticamente"}</p>
             <form data-addc="${m.id}" class="grid-2" style="margin-top:8px">
               <input name="title" placeholder="Titulo do conteudo" required />
               <select name="type"><option value="text">Texto</option><option value="image">Imagem</option><option value="libras">Libras</option></select>
@@ -972,6 +1187,31 @@ async function companyTrainingEditor(view, id) {
         <input name="q1b" placeholder="Alternativa incorreta" />
         <button class="btn btn-primary" type="submit">Salvar avaliacao</button>
       </form>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>Tarefas do treinamento</h3>
+      <p>Vincule tarefas ao treinamento ou a um modulo. O colaborador envia a resposta no curso.</p>
+      <form id="ntask" class="grid-2">
+        <input name="title" placeholder="Titulo da tarefa" required />
+        <select name="module_id">
+          <option value="">Treinamento inteiro</option>
+          ${t.modules.map((m) => `<option value="${m.id}">${escapeHtml(m.title)}</option>`).join("")}
+        </select>
+        <input name="due_at" type="date" />
+        <textarea name="instructions" placeholder="Instrucoes visuais para o posto"></textarea>
+        <button class="btn btn-primary" type="submit">Criar tarefa</button>
+        <button class="btn btn-ghost" type="button" id="gen-tasks">Gerar pelo tema</button>
+      </form>
+      <div id="taskmsg"></div>
+      ${(t.tasks || []).map((tk) => `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <b>${escapeHtml(tk.title)}</b> ${taskBadge(tk.submitted || tk.approved ? "submitted" : "pending")}
+        <p style="color:var(--muted);margin:4px 0">${escapeHtml(tk.module_title || "Treinamento")} · prazo ${tk.due_at ? fmtDate(tk.due_at) : "-"} · ${tk.approved || 0} aprovadas · ${tk.submitted || 0} enviadas · ${tk.pending || 0} pendentes</p>
+        <p>${escapeHtml(tk.instructions || "")}</p>
+        <div class="row-actions">
+          <a class="btn btn-primary btn-sm" href="#/app/tarefas/${tk.id}">Ver respostas</a>
+          <button class="btn btn-danger btn-sm" data-dtask="${tk.id}">Excluir</button>
+        </div>
+      </div>`).join("") || "<p>Nenhuma tarefa vinculada ainda.</p>"}
     </div>
   `;
   document.getElementById("et").onsubmit = async (e) => {
@@ -1019,6 +1259,148 @@ async function companyTrainingEditor(view, id) {
     });
     companyTrainingEditor(view, id);
   };
+  document.getElementById("ntask").onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = Object.fromEntries(new FormData(e.target));
+    try {
+      await api("/api/company/tasks", {
+        method: "POST",
+        body: JSON.stringify({
+          training_id: Number(id),
+          title: fd.title,
+          instructions: fd.instructions,
+          due_at: fd.due_at || null,
+          module_id: fd.module_id || null,
+          required: 1
+        })
+      });
+      companyTrainingEditor(view, id);
+    } catch (err) {
+      document.getElementById("taskmsg").innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    }
+  };
+  document.getElementById("gen-tasks").onclick = async () => {
+    try {
+      const r = await api(`/api/company/trainings/${id}/tasks/generate`, { method: "POST" });
+      document.getElementById("taskmsg").innerHTML = `<div class="okmsg">${escapeHtml(r.message || (r.tasks?.length ? r.tasks.length + " tarefas geradas." : "Tarefas geradas."))}</div>`;
+      companyTrainingEditor(view, id);
+    } catch (err) {
+      document.getElementById("taskmsg").innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    }
+  };
+  view.querySelectorAll("[data-dtask]").forEach((b) => {
+    b.onclick = async () => {
+      if (confirm("Excluir esta tarefa?")) {
+        await api(`/api/company/tasks/${b.dataset.dtask}`, { method: "DELETE" });
+        companyTrainingEditor(view, id);
+      }
+    };
+  });
+}
+
+async function companyTasks(view) {
+  const rows = await api("/api/company/tasks");
+  const trainings = await api("/api/company/trainings");
+  view.innerHTML = `
+    <div class="card" style="margin-bottom:14px">
+      <h3>Nova tarefa</h3>
+      <form id="ctask" class="grid-2">
+        <select name="training_id" required>
+          <option value="">Selecione o treinamento</option>
+          ${trainings.map((t) => `<option value="${t.id}">${escapeHtml(t.title)}</option>`).join("")}
+        </select>
+        <input name="title" placeholder="Titulo" required />
+        <input name="due_at" type="date" />
+        <textarea name="instructions" placeholder="Instrucoes"></textarea>
+        <button class="btn btn-primary" type="submit">Criar e vincular</button>
+      </form>
+      <div id="ctmsg"></div>
+    </div>
+    <div class="card"><table class="table">
+      <tr><th>Tarefa</th><th>Treinamento</th><th>Prazo</th><th>Pendentes</th><th>Enviadas</th><th>Aprovadas</th><th></th></tr>
+      ${rows.map((tk) => `<tr>
+        <td>${escapeHtml(tk.title)}</td>
+        <td>${escapeHtml(tk.training_title)}${tk.module_title ? " · " + escapeHtml(tk.module_title) : ""}</td>
+        <td>${tk.due_at ? fmtDate(tk.due_at) : "-"}</td>
+        <td>${tk.pending}</td>
+        <td>${tk.submitted}</td>
+        <td>${tk.approved}</td>
+        <td><a class="btn btn-primary btn-sm" href="#/app/tarefas/${tk.id}">Respostas</a></td>
+      </tr>`).join("") || "<tr><td colspan='7'>Nenhuma tarefa criada.</td></tr>"}
+    </table></div>
+  `;
+  document.getElementById("ctask").onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await api("/api/company/tasks", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(e.target))) });
+      companyTasks(view);
+    } catch (err) {
+      document.getElementById("ctmsg").innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    }
+  };
+}
+
+async function companyTaskDetail(view, id) {
+  const tk = await api(`/api/company/tasks/${id}`);
+  view.innerHTML = `
+    <div class="card" style="margin-bottom:14px">
+      <p class="kicker">${escapeHtml(tk.training_title)}${tk.module_title ? " · " + escapeHtml(tk.module_title) : ""}</p>
+      <h3>${escapeHtml(tk.title)}</h3>
+      <p>${escapeHtml(tk.instructions || "")}</p>
+      <p>Prazo ${tk.due_at ? fmtDate(tk.due_at) : "-"} · ${tk.pending} pendentes · ${tk.submitted} enviadas · ${tk.approved} aprovadas</p>
+      <a class="btn btn-ghost btn-sm" href="#/app/tarefas">Voltar</a>
+    </div>
+    <div class="card"><table class="table">
+      <tr><th>Colaborador</th><th>Status</th><th>Resposta</th><th>Resultado</th></tr>
+      ${(tk.submissions || []).map((s) => `<tr>
+        <td>${escapeHtml(s.user_name)}<br><small>${escapeHtml(s.department || "")}</small></td>
+        <td>${taskBadge(s.status || "pending")}</td>
+        <td>${s.answer ? escapeHtml(s.answer).slice(0, 180) : "-"}</td>
+        <td>${s.status === "submitted" ? `<form data-rev="${s.user_id}" class="row-actions">
+          <input name="result_note" placeholder="Comentario" />
+          <button class="btn btn-primary btn-sm" data-st="approved" type="submit">Aprovar</button>
+          <button class="btn btn-ghost btn-sm" data-st="rejected" type="submit">Devolver</button>
+        </form>` : (s.result_note ? escapeHtml(s.result_note) : "-")}</td>
+      </tr>`).join("")}
+    </table></div>
+  `;
+  view.querySelectorAll("[data-rev]").forEach((f) => {
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const status = e.submitter?.dataset.st || "approved";
+      await api(`/api/company/tasks/${id}/review`, {
+        method: "POST",
+        body: JSON.stringify({
+          user_id: Number(f.dataset.rev),
+          status,
+          result_note: new FormData(f).get("result_note")
+        })
+      });
+      companyTaskDetail(view, id);
+    };
+  });
+}
+
+async function collabTasks(view) {
+  const d = await api("/api/collaborator/tasks");
+  view.innerHTML = `
+    <div class="kpis">
+      <div class="card kpi"><span>Pendentes</span><b>${d.stats.pending}</b></div>
+      <div class="card kpi"><span>Enviadas</span><b>${d.stats.submitted}</b></div>
+      <div class="card kpi"><span>Aprovadas</span><b>${d.stats.approved}</b></div>
+      <div class="card kpi"><span>Total</span><b>${d.stats.total}</b></div>
+    </div>
+    <div class="course-grid">${(d.tasks || []).map((tk) => `<article class="card">
+      <span class="kicker">${escapeHtml(tk.training_title)}</span>
+      <h3>${escapeHtml(tk.title)}</h3>
+      ${taskBadge(tk.my_status)}
+      <p>${escapeHtml(tk.instructions || "").slice(0, 140)}</p>
+      <p style="color:var(--muted)">Prazo ${tk.due_at ? fmtDate(tk.due_at) : "-"}</p>
+      ${tk.my_status === "rejected" && tk.submission?.result_note ? `<div class="error">${escapeHtml(tk.submission.result_note)}</div>` : ""}
+      ${tk.my_status === "approved" ? `<div class="okmsg">${escapeHtml(tk.submission?.result_note || "Tarefa aprovada.")}</div>` : ""}
+      <a class="btn btn-primary btn-sm" href="#/app/curso/${tk.training_id}">${tk.my_status === "pending" || tk.my_status === "rejected" ? "Responder no curso" : "Abrir treinamento"}</a>
+    </article>`).join("") || "<div class='card'>Nenhuma tarefa vinculada aos seus treinamentos.</div>"}</div>
+  `;
 }
 
 async function companyProgress(view) {
@@ -1074,4 +1456,4 @@ new MutationObserver(() => {
   document.querySelectorAll("input[placeholder]:not([aria-label]), textarea[placeholder]:not([aria-label])").forEach((f) => {
     if (!f.labels || !f.labels.length) f.setAttribute("aria-label", f.placeholder);
   });
-}).observe(document.getElementById("app"), { childList: true, subtree: true, attributes: true, attributeFilter: ["style"] });
+}).observe(document.body, { childList: true, subtree: true });

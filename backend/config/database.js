@@ -79,10 +79,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS activities (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     training_id INTEGER NOT NULL,
+    module_id INTEGER,
+    kind TEXT NOT NULL DEFAULT 'final' CHECK (kind IN ('module', 'final')),
     title TEXT NOT NULL,
     description TEXT,
     passing_score INTEGER DEFAULT 70,
-    FOREIGN KEY (training_id) REFERENCES trainings(id) ON DELETE CASCADE
+    FOREIGN KEY (training_id) REFERENCES trainings(id) ON DELETE CASCADE,
+    FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS questions (
@@ -147,6 +150,47 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (training_id) REFERENCES trainings(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    training_id INTEGER NOT NULL,
+    module_id INTEGER,
+    title TEXT NOT NULL,
+    instructions TEXT,
+    due_at TEXT,
+    required INTEGER DEFAULT 1,
+    created_by INTEGER,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (training_id) REFERENCES trainings(id) ON DELETE CASCADE,
+    FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS task_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    answer TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'submitted', 'approved', 'rejected')),
+    result_note TEXT,
+    submitted_at TEXT,
+    reviewed_at TEXT,
+    reviewed_by INTEGER,
+    UNIQUE(task_id, user_id),
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (reviewed_by) REFERENCES users(id)
+  );
 `);
 
 try {
@@ -154,5 +198,16 @@ try {
 } catch {
   /* column already exists */
 }
+try {
+  db.exec("ALTER TABLE activities ADD COLUMN module_id INTEGER");
+} catch {
+  /* column already exists */
+}
+try {
+  db.exec("ALTER TABLE activities ADD COLUMN kind TEXT DEFAULT 'final'");
+} catch {
+  /* column already exists */
+}
+db.prepare("UPDATE activities SET kind = 'final' WHERE kind IS NULL OR kind = ''").run();
 
 module.exports = db;

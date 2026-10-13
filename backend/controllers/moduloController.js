@@ -1,5 +1,6 @@
 const db = require("../config/database");
 const { maybeIssueCertificate } = require("./certificadoController");
+const { quizForModule } = require("../src/quizzes");
 
 function createModule(req, res) {
   const t = db.prepare("SELECT * FROM trainings WHERE id = ? AND company_id = ?").get(req.params.id, req.user.company_id);
@@ -8,6 +9,17 @@ function createModule(req, res) {
   if (!title) return res.status(400).json({ error: "Informe o titulo do modulo." });
   const order = db.prepare("SELECT COUNT(*) AS n FROM modules WHERE training_id = ?").get(t.id).n;
   const id = db.prepare("INSERT INTO modules (training_id, title, description, order_index) VALUES (?, ?, ?, ?)").run(t.id, title, description || "", order).lastInsertRowid;
+  const quiz = quizForModule(title);
+  const aid = db.prepare(
+    `INSERT INTO activities (training_id, module_id, kind, title, description, passing_score)
+     VALUES (?, ?, 'module', ?, ?, 70)`
+  ).run(t.id, id, quiz.title, quiz.description).lastInsertRowid;
+  quiz.questions.forEach((qq, qi) => {
+    const qid = db.prepare("INSERT INTO questions (activity_id, prompt, order_index) VALUES (?, ?, ?)").run(aid, qq.prompt, qi).lastInsertRowid;
+    qq.options.forEach((o) => {
+      db.prepare("INSERT INTO options (question_id, label, is_correct) VALUES (?, ?, ?)").run(qid, o[0], o[1]);
+    });
+  });
   res.status(201).json(db.prepare("SELECT * FROM modules WHERE id = ?").get(id));
 }
 

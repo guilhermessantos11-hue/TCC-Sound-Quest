@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../config/database");
@@ -50,13 +51,67 @@ function publicUser(user) {
 function login(req, res) {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: "Informe e-mail e senha." });
-  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(String(email).trim().toLowerCase());
+  const emailNorm = String(email).trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) {
+    return res.status(400).json({ error: "Informe um e-mail valido." });
+  }
+  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(emailNorm);
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     return res.status(401).json({ error: "E-mail ou senha incorretos." });
   }
   if (user.status !== "active") return res.status(403).json({ error: "Conta inativa. Contate o administrador." });
   const company = db.prepare("SELECT * FROM companies WHERE id = ?").get(user.company_id);
   res.json({ token: sign(user), user: publicUser(user), company });
+}
+
+function forgotPassword(req, res) {
+  const emailNorm = String((req.body || {}).email || "").trim().toLowerCase();
+  if (!emailNorm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) {
+    return res.status(400).json({ error: "Informe um e-mail valido." });
+  }
+  const generic = {
+    message: "Se o e-mail estiver cadastrado, enviaremos as instrucoes para redefinir a senha."
+  };
+  const user = db.prepare("SELECT * FROM users WHERE email = ? AND status = 'active'").get(emailNorm);
+  if (!user) return res.json(generic);
+
+  db.prepare("UPDATE password_reset_tokens SET used_at = datetime('now') WHERE user_id = ? AND used_at IS NULL").run(user.id);
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString().replace("T", " ").slice(0, 19);
+  db.prepare("INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)").run(
+    user.id,
+    tokenHash,
+    expiresAt
+  );
+
+  const payload = { ...generic, reset_path: `/#/redefinir-senha?token=${token}` };
+  if (process.env.NODE_ENV !== "production") payload.reset_token = token;
+  res.json(payload);
+}
+
+function resetPassword(req, res) {
+  const { token, password } = req.body || {};
+  if (!token || !password) return res.status(400).json({ error: "Informe o codigo e a nova senha." });
+  if (String(password).length < 6) return res.status(400).json({ error: "A senha deve ter no minimo 6 caracteres." });
+
+  const tokenHash = crypto.createHash("sha256").update(String(token)).digest("hex");
+  const row = db
+    .prepare(
+      `SELECT * FROM password_reset_tokens
+       WHERE token_hash = ? AND used_at IS NULL AND datetime(expires_at) > datetime('now')`
+    )
+    .get(tokenHash);
+  if (!row) return res.status(400).json({ error: "Link de recuperacao invalido ou expirado." });
+
+  const user = db.prepare("SELECT * FROM users WHERE id = ? AND status = 'active'").get(row.user_id);
+  if (!user) return res.status(400).json({ error: "Link de recuperacao invalido ou expirado." });
+
+  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(bcrypt.hashSync(String(password), 10), user.id);
+  db.prepare("UPDATE password_reset_tokens SET used_at = datetime('now') WHERE id = ?").run(row.id);
+  db.prepare("UPDATE password_reset_tokens SET used_at = datetime('now') WHERE user_id = ? AND used_at IS NULL").run(user.id);
+  res.json({ message: "Senha redefinida com sucesso. Faca login com a nova senha." });
 }
 
 function register(req, res) {
@@ -114,4 +169,4 @@ function updateMe(req, res) {
   res.json({ user: publicUser(db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id)) });
 }
 
-module.exports = { sign, auth, publicUser, login, register, me, updateMe };
+module.exports = { sign, auth, publicUser, login, register, me, updateMe, forgotPassword, resetPassword };

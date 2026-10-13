@@ -50,7 +50,16 @@ function dashboard(req, res) {
     enrollments: enriched,
     available,
     certificates,
-    required: requiredList
+    required: requiredList,
+    tasks: db.prepare(
+      `SELECT tk.id, tk.title, tk.due_at, t.title AS training_title,
+        COALESCE(s.status, 'pending') AS status
+       FROM tasks tk
+       JOIN trainings t ON t.id = tk.training_id
+       JOIN enrollments e ON e.training_id = t.id AND e.user_id = ?
+       LEFT JOIN task_submissions s ON s.task_id = tk.id AND s.user_id = ?
+       ORDER BY tk.due_at IS NULL, tk.due_at LIMIT 8`
+    ).all(req.user.id, req.user.id)
   });
 }
 
@@ -74,13 +83,25 @@ function companyDashboard(req, res) {
      FROM users u LEFT JOIN enrollments e ON e.user_id = u.id
      WHERE u.company_id = ? AND u.role = 'collaborator' GROUP BY department`
   ).all(cid);
+  const taskStats = db.prepare(
+    `SELECT COUNT(tk.id) AS total,
+      COALESCE(SUM(CASE WHEN s.status = 'approved' THEN 1 ELSE 0 END), 0) AS approved,
+      COALESCE(SUM(CASE WHEN s.status = 'submitted' THEN 1 ELSE 0 END), 0) AS submitted,
+      COALESCE(SUM(CASE WHEN s.status IS NULL OR s.status = 'pending' OR s.status = 'rejected' THEN 1 ELSE 0 END), 0) AS pending
+     FROM tasks tk
+     JOIN trainings t ON t.id = tk.training_id
+     JOIN enrollments e ON e.training_id = t.id
+     JOIN users u ON u.id = e.user_id
+     LEFT JOIN task_submissions s ON s.task_id = tk.id AND s.user_id = u.id
+     WHERE t.company_id = ?`
+  ).get(cid);
   const recentAttempts = db.prepare(
     `SELECT a.id, a.score, a.passed, a.created_at, u.name AS user_name, ac.title AS activity_title, t.title AS training_title
      FROM attempts a JOIN users u ON u.id = a.user_id
      JOIN activities ac ON ac.id = a.activity_id JOIN trainings t ON t.id = ac.training_id
      WHERE t.company_id = ? ORDER BY a.created_at DESC LIMIT 8`
   ).all(cid);
-  res.json({ stats: { collaborators, trainings, enrollments, completed, certificates }, byTraining, byDept, recentAttempts });
+  res.json({ stats: { collaborators, trainings, enrollments, completed, certificates, tasks: taskStats }, byTraining, byDept, recentAttempts });
 }
 
 function list(req, res) {

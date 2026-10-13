@@ -14,7 +14,6 @@ export function announce(msg) {
   setTimeout(() => (r.textContent = msg), 50);
 }
 
-// VLibras: tradutor oficial Português -> Libras (governo federal). Usa avatar 3D; é tradução automática.
 export function setLibras(on) {
   let host = document.querySelector("[vw]");
   if (on && !host) {

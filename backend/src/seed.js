@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const db = require("./db");
 const { maybeIssueCertificate } = require("../controllers/certificadoController");
+const { MODULE_QUIZZES, FINAL_EXAMS, quizForModule } = require("./quizzes");
 
 function seed() {
   const count = db.prepare("SELECT COUNT(*) AS n FROM users").get().n;
@@ -69,9 +70,9 @@ function seed() {
               title: "Mapa visual de riscos",
               type: "image",
               body: "Identifique zonas de risco, protecoes fixas e pontos de bloqueio na linha de producao.",
-               media_url: "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?auto=format&fit=crop&w=1200&q=80",
-               captions: "Imagem de planta industrial com areas de protecao destacadas.",
-              libras_notes: "Intérprete descreve zonas vermelhas de risco e zonas verdes seguras."
+              media_url: "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?auto=format&fit=crop&w=1200&q=80",
+              captions: "Imagem de planta industrial com areas de protecao destacadas.",
+              libras_notes: "Interprete descreve zonas vermelhas de risco e zonas verdes seguras."
             }
           ]
         },
@@ -90,8 +91,8 @@ function seed() {
               title: "Procedimento visual de bloqueio",
               type: "image",
               body: "Consulte o infografico do procedimento de bloqueio e etiquetagem (LOTO). Siga cada etapa na ordem: desligar, bloquear, sinalizar e verificar a ausencia de energia.",
-               media_url: "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1200&q=80",
-               captions: "1. Desligue a maquina. 2. Aplique o cadeado. 3. Sinalize. 4. Teste a ausencia de energia.",
+              media_url: "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1200&q=80",
+              captions: "1. Desligue a maquina. 2. Aplique o cadeado. 3. Sinalize. 4. Teste a ausencia de energia.",
               libras_notes: "Interpretacao em Libras dos quatro passos: desligar, aplicar cadeado, sinalizar e verificar ausencia de energia."
             }
           ]
@@ -101,46 +102,7 @@ function seed() {
         title: "Avaliacao NR-12",
         description: "Verifique os conhecimentos sobre protecoes e procedimentos seguros.",
         questions: [
-          {
-            prompt: "Antes de operar uma maquina, o colaborador deve:",
-            options: [
-              ["Verificar se as protecoes estao instaladas e o botao de emergencia visivel", 1],
-              ["Remover protecoes para aumentar a produtividade", 0],
-              ["Ignorar a sinalizacao se ja conhece o equipamento", 0]
-            ]
-          },
-          {
-            prompt: "O procedimento de bloqueio e etiquetagem (LOTO) serve para:",
-            options: [
-              ["Evitar religamento acidental durante manutencao", 1],
-              ["Acelerar a troca de turno", 0],
-              ["Substituir o treinamento de seguranca", 0]
-            ]
-          },
-          {
-            prompt: "Qual recurso de acessibilidade e essencial neste treinamento?",
-            options: [
-              ["Legendas, Libras e conteudo visual claro", 1],
-              ["Apenas audio sem texto", 0],
-              ["Som ambiente em volume alto", 0]
-            ]
-          },
-          {
-            prompt: "O botao de emergencia deve estar:",
-            options: [
-              ["Visivel, acessivel e identificado", 1],
-              ["Escondido para evitar acionamento acidental", 0],
-              ["Disponivel apenas no escritorio", 0]
-            ]
-          },
-          {
-            prompt: "Protecoes moveis devem estar associadas a:",
-            options: [
-              ["Intertravamentos de seguranca", 1],
-              ["Aumento de velocidade da linha", 0],
-              ["Remocao temporaria sem registro", 0]
-            ]
-          }
+          ...(FINAL_EXAMS["NR-12: Seguranca em Maquinas e Equipamentos"]?.questions || [])
         ]
       }
     },
@@ -167,9 +129,9 @@ function seed() {
               title: "Painel de rotina acessivel",
               type: "image",
               body: "Exemplo de quadro de tarefas com icones, horarios e status visuais.",
-               media_url: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
-               captions: "Quadro com icones de tarefa, responsavel e status.",
-              libras_notes: "Intérprete explica cada icone do quadro."
+              media_url: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
+              captions: "Quadro com icones de tarefa, responsavel e status.",
+              libras_notes: "Interprete explica cada icone do quadro."
             }
           ]
         },
@@ -192,29 +154,14 @@ function seed() {
         title: "Avaliacao de Comunicacao Inclusiva",
         description: "Confirme as praticas corretas de comunicacao no ambiente industrial.",
         questions: [
-          {
-            prompt: "A melhor forma de passar uma instrucao urgente no chao de fabrica e:",
-            options: [
-              ["Sinal visual padronizado + mensagem escrita curta", 1],
-              ["Apenas aviso verbal a distancia", 0],
-              ["Assobio sem contexto", 0]
-            ]
-          },
-          {
-            prompt: "O huddle de inicio de turno deve incluir:",
-            options: [
-              ["Pauta escrita, Libras e confirmacao visual", 1],
-              ["Somente conversa rapida sem registro", 0],
-              ["Apenas e-mail enviado apos o turno", 0]
-            ]
-          }
+          ...(FINAL_EXAMS["Comunicacao Inclusiva no Chao de Fabrica"]?.questions || [])
         ]
       }
     },
     {
       title: "Qualidade e Padronizacao de Processos",
       description:
-        "Controle visual de qualidade, inspeção por evidencias e registros acessiveis para operadores.",
+        "Controle visual de qualidade, inspecao por evidencias e registros acessiveis para operadores.",
       category: "Qualidade",
       duration: 75,
       level: "Intermediario",
@@ -228,7 +175,7 @@ function seed() {
               type: "text",
               body: "A padronizacao reduz retrabalho. Compare sempre a peca com o padrao ouro fotografico. Qualquer desvio de medida, acabamento ou montagem deve ser sinalizado no painel de qualidade.",
               captions: "Conforme = verde. Nao conforme = vermelho. Em analise = amarelo.",
-              libras_notes: "Intérprete mostra exemplos de peca conforme e nao conforme."
+              libras_notes: "Interprete mostra exemplos de peca conforme e nao conforme."
             },
             {
               title: "Estacao de inspecao",
@@ -245,22 +192,7 @@ function seed() {
         title: "Avaliacao de Qualidade",
         description: "Valide o entendimento sobre conformidade e registros.",
         questions: [
-          {
-            prompt: "Ao identificar um desvio, o operador deve:",
-            options: [
-              ["Sinalizar no painel e registrar a evidencia visual", 1],
-              ["Continuar a producao e avisar no fim do mes", 0],
-              ["Descartar a peca sem registro", 0]
-            ]
-          },
-          {
-            prompt: "O padrao ouro serve para:",
-            options: [
-              ["Comparar visualmente a peca produzida com o referencia", 1],
-              ["Substituir o treinamento tecnico", 0],
-              ["Definir o salario da equipe", 0]
-            ]
-          }
+          ...(FINAL_EXAMS["Qualidade e Padronizacao de Processos"]?.questions || [])
         ]
       }
     }
@@ -278,7 +210,7 @@ function seed() {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   );
   const insertActivity = db.prepare(
-    `INSERT INTO activities (training_id, title, description, passing_score) VALUES (?, ?, ?, 70)`
+    `INSERT INTO activities (training_id, module_id, kind, title, description, passing_score) VALUES (?, ?, ?, ?, ?, 70)`
   );
   const insertQuestion = db.prepare(
     `INSERT INTO questions (activity_id, prompt, order_index) VALUES (?, ?, ?)`
@@ -319,13 +251,20 @@ function seed() {
           ci
         );
       });
+      const quiz = quizForModule(m.title);
+      const qidAct = insertActivity.run(tid, mid, "module", quiz.title, quiz.description).lastInsertRowid;
+      quiz.questions.forEach((qq, qi) => {
+        const qid = insertQuestion.run(qidAct, qq.prompt, qi).lastInsertRowid;
+        qq.options.forEach((o) => insertOption.run(qid, o[0], o[1]));
+      });
     });
 
-    const aid = insertActivity.run(tid, t.activity.title, t.activity.description).lastInsertRowid;
+    const aid = insertActivity.run(tid, null, "final", t.activity.title, t.activity.description).lastInsertRowid;
     t.activity.questions.forEach((q, qi) => {
       const qid = insertQuestion.run(aid, q.prompt, qi).lastInsertRowid;
       q.options.forEach((o) => insertOption.run(qid, o[0], o[1]));
     });
+    seedTasksForTraining(tid, t);
   });
 
   const enroll = db.prepare(
@@ -363,19 +302,132 @@ function seed() {
         }
       });
 
-      if (idx === 1 && tIndex === 0) {
-        const activity = db.prepare("SELECT id FROM activities WHERE training_id = ?").get(tid);
-        insertAttempt.run(uid, activity.id, 90, 1, JSON.stringify({ demo: true }));
+      if ((idx === 1 && tIndex === 0) || (idx === 3 && tIndex === 1)) {
+        db.prepare("SELECT id FROM activities WHERE training_id = ? AND kind = 'module'").all(tid).forEach((qa) => {
+          insertAttempt.run(uid, qa.id, 100, 1, JSON.stringify({ demo: true }));
+        });
+        const activity = db.prepare("SELECT id FROM activities WHERE training_id = ? AND (kind = 'final' OR kind IS NULL) AND module_id IS NULL").get(tid);
+        if (activity) insertAttempt.run(uid, activity.id, idx === 1 ? 90 : 85, 1, JSON.stringify({ demo: true }));
       }
-      if (idx === 3 && tIndex === 1) {
-        const activity = db.prepare("SELECT id FROM activities WHERE training_id = ?").get(tid);
-        insertAttempt.run(uid, activity.id, 85, 1, JSON.stringify({ demo: true }));
-      }
+
+      const tTasks = db.prepare("SELECT id FROM tasks WHERE training_id = ?").all(tid);
+      tTasks.forEach((tk, ki) => {
+        if (idx === 1 && tIndex === 0) {
+          db.prepare(
+            `INSERT INTO task_submissions (task_id, user_id, answer, status, submitted_at, reviewed_at)
+             VALUES (?, ?, ?, 'approved', datetime('now'), datetime('now'))`
+          ).run(tk.id, uid, "Resposta demonstrativa aprovada no posto de trabalho.");
+        } else if (idx === 3 && tIndex === 1) {
+          db.prepare(
+            `INSERT INTO task_submissions (task_id, user_id, answer, status, submitted_at, reviewed_at)
+             VALUES (?, ?, ?, 'approved', datetime('now'), datetime('now'))`
+          ).run(tk.id, uid, "Registro visual do turno com icones de meta, risco e apoio.");
+        } else if (idx === 0 && ki === 0) {
+          db.prepare(
+            `INSERT INTO task_submissions (task_id, user_id, answer, status, submitted_at)
+             VALUES (?, ?, ?, 'submitted', datetime('now'))`
+          ).run(tk.id, uid, "Protecoes fixas e botao de emergencia conferidos no posto. Cadeado aplicado no painel.");
+        }
+      });
     });
   });
 
   db.prepare("SELECT user_id, training_id FROM enrollments").all().forEach((row) => {
     maybeIssueCertificate(row.user_id, row.training_id);
+  });
+}
+
+const TASK_TEMPLATES = {
+  "NR-12: Seguranca em Maquinas e Equipamentos": [
+    {
+      title: "Checklist visual de protecoes",
+      instructions: "No seu posto, liste 4 protecoes visiveis (fixas, moveis, sensores ou emergencia). Descreva o estado de cada uma e o que faria se alguma estivesse ausente.",
+      moduleIndex: 1
+    },
+    {
+      title: "Simulacao de bloqueio e etiquetagem",
+      instructions: "Descreva, em ordem, os passos de bloqueio (LOTO) que voce aplicaria antes de uma intervencao. Cite como sinalizaria o equipamento para a equipe.",
+      moduleIndex: 1
+    }
+  ],
+  "Comunicacao Inclusiva no Chao de Fabrica": [
+    {
+      title: "Painel visual do turno",
+      instructions: "Proponha um quadro de inicio de turno com icones para meta, risco e apoio. Explique como um colega surdo confirmaria o entendimento sem audio.",
+      moduleIndex: 0
+    },
+    {
+      title: "Sinal combinado da equipe",
+      instructions: "Descreva 3 sinais visuais padronizados (partir, pausar, pedir apoio) e onde eles ficariam visiveis na linha.",
+      moduleIndex: 1
+    }
+  ],
+  "Qualidade e Padronizacao de Processos": [
+    {
+      title: "Comparacao com o padrao ouro",
+      instructions: "Descreva como voce compara uma peca com o padrao fotografico. Cite 3 desvios visuais que voce sinalizaria no painel de qualidade.",
+      moduleIndex: 0
+    },
+    {
+      title: "Registro acessivel de nao conformidade",
+      instructions: "Monte um relato curto de nao conformidade usando so evidencias visuais: o que viu, onde registrou e quem avisou.",
+      moduleIndex: 0
+    }
+  ]
+};
+
+function seedTasksForTraining(trainingId, training) {
+  const modules = db.prepare("SELECT id FROM modules WHERE training_id = ? ORDER BY order_index, id").all(trainingId);
+  const templates = TASK_TEMPLATES[training.title] || [
+    {
+      title: "Aplicacao pratica no posto",
+      instructions: `Descreva como voce aplicara o treinamento "${training.title}" no seu posto. Cite 3 evidencias visuais que comprovam o entendimento.`,
+      moduleIndex: 0
+    }
+  ];
+  const insertTask = db.prepare(
+    `INSERT INTO tasks (training_id, module_id, title, instructions, due_at, required)
+     VALUES (?, ?, ?, ?, date('now', '+21 day'), 1)`
+  );
+  templates.forEach((tpl) => {
+    const exists = db.prepare("SELECT id FROM tasks WHERE training_id = ? AND title = ?").get(trainingId, tpl.title);
+    if (exists) return;
+    const mid = modules[tpl.moduleIndex] ? modules[tpl.moduleIndex].id : (modules[0] ? modules[0].id : null);
+    insertTask.run(trainingId, mid, tpl.title, tpl.instructions);
+  });
+}
+
+function insertQuiz(trainingId, moduleId, kind, quiz) {
+  if (!quiz) return;
+  const exists = kind === "module"
+    ? db.prepare("SELECT id FROM activities WHERE module_id = ? AND kind = 'module'").get(moduleId)
+    : db.prepare("SELECT id FROM activities WHERE training_id = ? AND (kind = 'final' OR kind IS NULL) AND module_id IS NULL").get(trainingId);
+  if (exists) {
+    const qCount = db.prepare("SELECT COUNT(*) AS n FROM questions WHERE activity_id = ?").get(exists.id).n;
+    const fourOpts = db.prepare(
+      `SELECT MIN((SELECT COUNT(*) FROM options o WHERE o.question_id = q.id)) AS n
+       FROM questions q WHERE q.activity_id = ?`
+    ).get(exists.id);
+    if (qCount > 0 && fourOpts && fourOpts.n >= 4) return;
+    db.prepare("DELETE FROM options WHERE question_id IN (SELECT id FROM questions WHERE activity_id = ?)").run(exists.id);
+    db.prepare("DELETE FROM questions WHERE activity_id = ?").run(exists.id);
+  }
+  const insertActivity = db.prepare(
+    `INSERT INTO activities (training_id, module_id, kind, title, description, passing_score) VALUES (?, ?, ?, ?, ?, 70)`
+  );
+  const insertQuestion = db.prepare(`INSERT INTO questions (activity_id, prompt, order_index) VALUES (?, ?, ?)`);
+  const insertOption = db.prepare(`INSERT INTO options (question_id, label, is_correct) VALUES (?, ?, ?)`);
+  const aid = exists
+    ? exists.id
+    : insertActivity.run(trainingId, moduleId, kind, quiz.title, quiz.description).lastInsertRowid;
+  if (exists) {
+    db.prepare("UPDATE activities SET kind = ?, module_id = ?, title = ?, description = ? WHERE id = ?").run(
+      kind, moduleId, quiz.title, quiz.description, exists.id
+    );
+  }
+  quiz.questions.forEach((qq, qi) => {
+    const qid = insertQuestion.run(aid, qq.prompt, qi).lastInsertRowid;
+    qq.options.forEach((o) => insertOption.run(qid, o[0], o[1]));
   });
 }
 
@@ -385,7 +437,52 @@ function repair() {
   } catch {
     /* already exists */
   }
+  try {
+    db.exec("ALTER TABLE activities ADD COLUMN module_id INTEGER");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE activities ADD COLUMN kind TEXT DEFAULT 'final'");
+  } catch {
+    /* already exists */
+  }
   db.prepare("UPDATE trainings SET required = 1 WHERE required IS NULL").run();
+  db.prepare("UPDATE activities SET kind = 'final' WHERE kind IS NULL OR kind = ''").run();
+
+  db.prepare("SELECT id, title FROM trainings").all().forEach((t) => {
+    const modules = db.prepare("SELECT id, title FROM modules WHERE training_id = ?").all(t.id);
+    modules.forEach((m) => insertQuiz(t.id, m.id, "module", quizForModule(m.title)));
+    insertQuiz(t.id, null, "final", FINAL_EXAMS[t.title]);
+    seedTasksForTraining(t.id, t);
+  });
+
+  db.prepare("SELECT user_id, training_id FROM certificates").all().forEach((row) => {
+    db.prepare("SELECT id FROM tasks WHERE training_id = ?").all(row.training_id).forEach((tk) => {
+      const sub = db.prepare("SELECT id FROM task_submissions WHERE task_id = ? AND user_id = ?").get(tk.id, row.user_id);
+      if (sub) return;
+      db.prepare(
+        `INSERT INTO task_submissions (task_id, user_id, answer, status, submitted_at, reviewed_at)
+         VALUES (?, ?, ?, 'approved', datetime('now'), datetime('now'))`
+      ).run(tk.id, row.user_id, "Tarefa reconhecida pela conclusao anterior do treinamento.");
+    });
+  });
+
+  const joao = db.prepare("SELECT id FROM users WHERE email = 'joao@soundquest.com'").get();
+  if (joao) {
+    db.prepare(
+      `SELECT tk.id FROM tasks tk
+       JOIN enrollments e ON e.training_id = tk.training_id AND e.user_id = ?
+       LEFT JOIN task_submissions s ON s.task_id = tk.id AND s.user_id = ?
+       WHERE s.id IS NULL LIMIT 1`
+    ).all(joao.id, joao.id).forEach((tk) => {
+      db.prepare(
+        `INSERT INTO task_submissions (task_id, user_id, answer, status, submitted_at)
+         VALUES (?, ?, ?, 'submitted', datetime('now'))`
+      ).run(tk.id, joao.id, "Protecoes fixas e botao de emergencia conferidos no posto. Cadeado aplicado no painel.");
+    });
+  }
+
   db.prepare("SELECT user_id, training_id FROM enrollments").all().forEach((row) => {
     maybeIssueCertificate(row.user_id, row.training_id);
   });
