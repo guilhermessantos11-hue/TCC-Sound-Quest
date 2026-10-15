@@ -1,36 +1,55 @@
 # SOUND QUEST
 
-Plataforma corporativa de capacitacao industrial acessivel para pessoas com deficiencia auditiva.
+Plataforma corporativa de capacitação industrial acessível para pessoas com deficiência auditiva.
 
 ## Como executar
 
-```bash
+Pré-requisito: Node.js (versão LTS recomendada) e npm instalados.
+
+bash
 npm run install:all
 npm start
-```
 
-- Frontend: `http://localhost:5173`
-- API: `http://localhost:3001`
+
+- Frontend: http://localhost:5173
+- API: http://localhost:3001
 
 ## Contas de teste
 
-Senha: `123456`
+Senha: 123456
 
-- Empresa: `empresa@soundquest.com`
-- Colaborador: `joao@soundquest.com`
+- Empresa: empresa@soundquest.com
+- Colaborador: joao@soundquest.com
 
-Qualquer usuario cadastrado entra pela mesma tela, com e-mail e senha. Apos o login, o sistema abre o dashboard do perfil correspondente. Use **Esqueceu a senha?** para iniciar a recuperacao segura.
+Qualquer usuário cadastrado entra pela mesma tela, com e-mail e senha. Após o login, o sistema abre o dashboard do perfil correspondente. Use Esqueceu a senha?para iniciar a recuperação segura.
 
-## Stack
+> *Atenção:* essas contas e a senha de teste servem apenas para desenvolvimento. Não devem existir em produção.
 
-- Frontend: HTML, CSS e JavaScript (Vite)
-- Backend: Node.js, Express, JWT, SQLite (`better-sqlite3`)
-- Acessibilidade: Libras, legendas, alto contraste e fonte ajustavel
+Stack
 
-Documentacao complementar em `docs/estrutura-projeto.md` e `docs/api.md`.
+- Frontend:HTML, CSS e JavaScript (Vite)
+- Backend: Node.js, Express, JWT, SQLite (better-sqlite3)
+- Acessibilidade: Libras, legendas, alto contraste e fonte ajustável
 
-## Libras e acessibilidade: o que o codigo faz e o que falta
+Documentação complementar
 
-- **VLibras** (tradutor oficial do governo, avatar 3D) e carregado pela barra de acessibilidade. E traducao automatica do portugues; exige internet.
-- **Conteudo critico de seguranca (NR-12, LOTO)** deve ter video com interprete de Libras e legendas revisadas por humanos. Falta produzir esse material para `loto-bloqueio.mp4`.
-- **Sinais da fabrica** (`#/app/sinais`): alarmes sonoros traduzidos em cor, ritmo e vibracao. Os padroes sao exemplos; validar com a SST da empresa.
+- docs/estrutura-projeto.md
+- docs/api.md
+
+## Libras e acessibilidade: o que o código faz e o que falta
+
+O que o código faz
+
+- VLibras (tradutor oficial do governo, com avatar 3D) é carregado pela barra de acessibilidade. É tradução automática do português e exige conexão com a internet.
+- *Sinais da fábrica* (#/app/sinais): alarmes sonoros traduzidos em cor, ritmo e vibração.
+
+ O que falta
+
+- Conteúdo crítico de segurança (NR-12, LOTO)** deve ter vídeo com intérprete de Libras e legendas revisadas por humanos. Falta produzir esse material para loto-bloqueio.mp4.
+- *Padrões dos sinais da fábrica:* os padrões atuais são apenas exemplos e devem ser validados com a SST da empresa antes de qualquer uso real.
+
+### Limitações importantes
+
+- O VLibras não substitui intérprete humano em conteúdo de segurança.
+- Um alarme interpretado de forma errada pode causar acidente, por isso nenhum padrão de sinal deve ser usado em campo sem validação da SST.
+-
