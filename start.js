@@ -1,18 +1,15 @@
-const { spawn } = require("child_process");
-const path = require("path");
+const { spawn } = require('child_process');
+const path = require('path');
 
-function run(name, cwd, command, args) {
-  const child = spawn(command, args, {
-    cwd,
-    stdio: "inherit",
-    env: process.env
+function run(name, args, cwd) {
+  const child = spawn('npm', args, {
+    cwd: path.join(__dirname, cwd),
+    stdio: 'inherit',
+    shell: true,
   });
-  child.on("exit", (code) => {
-    console.log(`${name} exited with ${code}`);
-    process.exit(code || 0);
-  });
+  child.on('exit', (code) => console.log(`[${name}] saiu com código ${code}`));
   return child;
 }
 
-run("api", path.join(__dirname, "backend"), "node", ["src/server.js"]);
-run("web", path.join(__dirname, "frontend"), "npx", ["vite", "--host", "0.0.0.0", "--port", "5173"]);
+run('backend', ['start'], 'backend');
+run('frontend', ['run', 'dev', '--', '--host', '0.0.0.0', '--port', '5173'], 'frontend');
